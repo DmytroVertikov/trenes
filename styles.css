@@ -320,4 +320,12 @@ footer {
         width: 24px;
         height: 24px;
     }
+  
+    .operator-alvia {
+        height: 24px;
+    }
+
+    .operator-avlo {
+        height: 24px;
+    }
 }
