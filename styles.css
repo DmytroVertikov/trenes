@@ -134,9 +134,10 @@ td.station {
 
 th:not(:first-child),
 td:not(.station) {
-  min-width: 72px;
-  padding-left: 6px;
-  padding-right: 6px;
+  min-width: 82px;         
+  padding-left: 8px;      
+  padding-right: 8px;
+}
 
 tr:hover td {
   background: #fff5f5;
@@ -252,8 +253,8 @@ footer {
 
   th:not(:first-child),
   td:not(.station) {
-    min-width: 62px;
-    padding-left: 4px;
-    padding-right: 4px;
+    min-width: 74px;
+    padding-left: 6px;
+    padding-right: 6px;
   }
 }
