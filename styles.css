@@ -269,3 +269,59 @@ footer {
     padding-right: 5px;
   }
 }
+
+.train-operators {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.operator-logo {
+    display: block;
+    width: auto;
+    object-fit: contain;
+}
+
+.operator-ave {
+    height: 25px;
+}
+
+.operator-iryo {
+    height: 24px;
+}
+
+.operator-ouigo {
+    width: 27px;
+    height: 27px;
+}
+
+.operator-frequency {
+    font-size: 13px;
+    color: #666;
+    white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+    .train-operators {
+        gap: 10px;
+    }
+
+    .operator-ave {
+        height: 22px;
+    }
+
+    .operator-iryo {
+        height: 21px;
+    }
+
+    .operator-ouigo {
+        width: 24px;
+        height: 24px;
+    }
+
+    .operator-frequency {
+        font-size: 12px;
+    }
+}
