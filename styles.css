@@ -91,16 +91,34 @@ th {
 
 .th-train {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.th-logo-badge {
+  background: white;
+  border-radius: 6px;
+  padding: 3px 9px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  white-space: nowrap;
+  line-height: 0;
 }
 
 .th-logo {
-  height: 13px;
   width: auto;
-  filter: brightness(0) invert(1);
+  display: block;
+}
+
+.th-logo-ave   { height: 14px; }
+.th-logo-iryo  { height: 13px; }
+.th-logo-ouigo { height: 15px; }
+
+.th-code {
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 th .train-num {
