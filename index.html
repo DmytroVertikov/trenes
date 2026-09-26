@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Horarios de Trenes — España</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f0f4f8;
+      color: #1a1a1a;
+      line-height: 1.5;
+    }
+    header {
+      background: #c60b1e;
+      color: white;
+      padding: 24px 20px;
+      text-align: center;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+    header p {
+      opacity: 0.9;
+      margin-top: 6px;
+      font-size: 0.95rem;
+    }
+    .container {
+      max-width: 960px;
+      margin: 30px auto;
+      padding: 0 16px;
+    }
+    .search-box {
+      margin-bottom: 20px;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      outline: none;
+    }
+    .search-box input:focus {
+      border-color: #c60b1e;
+      box-shadow: 0 0 0 3px rgba(198, 11, 30, 0.15);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    th {
+      background: #1a1a1a;
+      color: white;
+      padding: 14px 16px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    td {
+      padding: 13px 16px;
+      border-bottom: 1px solid #eee;
+      font-size: 0.95rem;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fff5f5; }
+    .train-type {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: white;
+    }
+    .ave { background: #c60b1e; }
+    .avant { background: #e67e22; }
+    .alvia { background: #2980b9; }
+    .md { background: #27ae60; }
+    footer {
+      text-align: center;
+      padding: 30px 20px;
+      color: #666;
+      font-size: 0.85rem;
+    }
+    @media (max-width: 600px) {
+      table, thead, tbody, th, td, tr { display: block; }
+      thead { display: none; }
+      tr {
+        margin-bottom: 16px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        padding: 12px;
+      }
+      td {
+        border: none;
+        padding: 6px 0;
+        display: flex;
+        justify-content: space-between;
+      }
+      td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #555;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Horarios de Trenes</h1>
+    <p>España · Renfe · AVE · Avant · Alvia</p>
+  </header>
+
+  <div class="container">
+    <div class="search-box">
+      <input type="text" id="search" placeholder="Buscar por origen, destino o tren..." onkeyup="filterTable()">
+    </div>
+
+    <table id="schedule">
+      <thead>
+        <tr>
+          <th>Tren</th>
+          <th>Origen</th>
+          <th>Destino</th>
+          <th>Salida</th>
+          <th>Llegada</th>
+          <th>Duración</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td data-label="Tren"><span class="train-type ave">AVE</span> 03081</td>
+          <td data-label="Origen">Madrid Puerta de Atocha</td>
+          <td data-label="Destino">Barcelona Sants</td>
+          <td data-label="Salida">06:20</td>
+          <td data-label="Llegada">08:45</td>
+          <td data-label="Duración">2h 25m</td>
+        </tr>
+        <tr>
+          <td data-label="Tren"><span class="train-type ave">AVE</span> 03101</td>
+          <td data-label="Origen">Madrid Puerta de Atocha</td>
+          <td data-label="Destino">Barcelona Sants</td>
+          <td data-label="Salida">07:30</td>
+          <td data-label="Llegada">10:05</td>
+          <td data-label="Duración">2h 35m</td>
+        </tr>
+        <tr>
+          <td data-label="Tren"><span class="train-type ave">AVE</span> 02070</td>
+          <td data-label="Origen">Madrid Puerta de Atocha</td>
+          <td data-label="Destino">Sevilla Santa Justa</td>
+          <td data-label="Salida">08:00</td>
+          <td data-label="Llegada">10:30</td>
+          <td data-label="Duración">2h 30m</td>
+        </tr>
+        <tr>
+          <td data-label="Tren"><span class="train-type avant">Avant</span> 08100</td>
+          <td data-label="Origen">Madrid Chamartín</td>
+          <td data-label="Destino">Valladolid Campo Grande</td>
+          <td data-label="Salida">08:15</td>
+          <td data-label="Llegada">09:15</td>
+          <td data-label="Duración">1h 00m</td>
+        </tr>
+        <tr>
+          <td data-label="Tren"><span class="train-type alvia">Alvia</span> 04180</td>
+          <td data-label="Origen">Madrid Chamartín</td>
+          <td data-label="Destino">A Coruña</td>
+          <td data-label="Salida">09:05</td>
+          <td data-label="Llegada">15:40</td>
+          <td data-label="Duración">6h 35m</td>
+        </tr>
+        <tr>
+          <td data-label="Tren"><span class="train-type ave">AVE</span> 03093</td>
+          <td data-label="Origen">Barcelona Sants</td>
+          <td data-label="Destino">Madrid Puerta de Atocha</td>
+          <td data-label="Salida">09:25</td>
+          <td data-label="Llegada">12:00</td>
+          <td data-label="Duración">2h 35m</td>
+        </tr>
+        <tr>
+          <td data-label="Tren"><span class="train-type md">MD</span> 17900</td>
+          <td data-label="Origen">Valencia Joaquín Sorolla</td>
+          <td data-label="Destino">Alicante</td>
+          <td data-label="Salida">10:10</td>
+          <td data-label="Llegada">11:45</td>
+          <td data-label="Duración">1h 35m</td>
+        </tr>
+        <tr>
+          <td data-label="Tren"><span class="train-type ave">AVE</span> 02120</td>
+          <td data-label="Origen">Sevilla Santa Justa</td>
+          <td data-label="Destino">Madrid Puerta de Atocha</td>
+          <td data-label="Salida">11:00</td>
+          <td data-label="Llegada">13:30</td>
+          <td data-label="Duración">2h 30m</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer>
+    Datos de ejemplo · Actualiza la tabla con horarios reales de Renfe
+  </footer>
+
+  <script>
+    function filterTable() {
+      const input = document.getElementById("search");
+      const filter = input.value.toLowerCase();
+      const rows = document.querySelectorAll("#schedule tbody tr");
+
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(filter) ? "" : "none";
+      });
+    }
+  </script>
+</body>
+</html>
