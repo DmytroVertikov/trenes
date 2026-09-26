@@ -60,11 +60,20 @@ function filterRoutes() {
   routes.forEach(route => {
     const routeFrom = normalize(route.dataset.from);
     const routeTo = normalize(route.dataset.to);
+    const h2 = route.querySelector('h2');
 
     const forwardMatch = (!from || routeFrom.includes(from)) && (!to || routeTo.includes(to));
     const reverseMatch  = (!from || routeTo.includes(from)) && (!to || routeFrom.includes(to));
 
     route.style.display = (forwardMatch || reverseMatch) ? '' : 'none';
+
+    if (reverseMatch && !forwardMatch && from && to) {
+      const originalFrom = capitalize(route.dataset.from);
+      const originalTo = capitalize(route.dataset.to);
+      h2.textContent = `${originalTo} ↔ ${originalFrom}`;
+    } else {
+      h2.textContent = h2.dataset.original;
+    }
   });
 }
 
