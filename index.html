@@ -3,221 +3,290 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Horarios de Trenes — España</title>
+  <title>Horarios Sevilla — Barcelona</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: system-ui, -apple-system, sans-serif;
-      background: #f0f4f8;
-      color: #1a1a1a;
-      line-height: 1.5;
+      background: #f5f5f5;
+      color: #222;
+      padding: 20px 10px 40px;
     }
-    header {
-      background: #c60b1e;
-      color: white;
-      padding: 24px 20px;
+    h1 {
       text-align: center;
+      margin-bottom: 6px;
+      font-size: 1.6rem;
     }
-    header h1 {
-      font-size: 1.8rem;
-      font-weight: 700;
-    }
-    header p {
-      opacity: 0.9;
-      margin-top: 6px;
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 24px;
       font-size: 0.95rem;
     }
-    .container {
-      max-width: 960px;
-      margin: 30px auto;
-      padding: 0 16px;
-    }
-    .search-box {
-      margin-bottom: 20px;
-    }
-    .search-box input {
-      width: 100%;
-      padding: 12px 16px;
-      font-size: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      outline: none;
-    }
-    .search-box input:focus {
-      border-color: #c60b1e;
-      box-shadow: 0 0 0 3px rgba(198, 11, 30, 0.15);
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
+    .table-wrapper {
+      overflow-x: auto;
+      margin-bottom: 40px;
       background: white;
       border-radius: 10px;
-      overflow: hidden;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
-    th {
-      background: #1a1a1a;
-      color: white;
-      padding: 14px 16px;
-      text-align: left;
-      font-weight: 600;
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 800px;
       font-size: 0.9rem;
     }
-    td {
-      padding: 13px 16px;
-      border-bottom: 1px solid #eee;
+    th {
+      background: #c60b1e;
+      color: white;
+      padding: 10px 8px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    th.train {
       font-size: 0.95rem;
     }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: #fff5f5; }
-    .train-type {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: white;
+    th.days {
+      background: #9b0a18;
+      font-size: 0.75rem;
+      font-weight: 500;
     }
-    .ave { background: #c60b1e; }
-    .avant { background: #e67e22; }
-    .alvia { background: #2980b9; }
-    .md { background: #27ae60; }
+    td {
+      padding: 8px 6px;
+      text-align: center;
+      border-bottom: 1px solid #eee;
+      white-space: nowrap;
+    }
+    td.station {
+      text-align: left;
+      font-weight: 600;
+      padding-left: 12px;
+      background: #fafafa;
+      position: sticky;
+      left: 0;
+      z-index: 1;
+    }
+    tr:hover td { background: #fff5f5; }
+    tr:hover td.station { background: #ffeaea; }
+    .section-title {
+      text-align: center;
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin: 30px 0 12px;
+      color: #c60b1e;
+    }
     footer {
       text-align: center;
-      padding: 30px 20px;
-      color: #666;
+      color: #888;
       font-size: 0.85rem;
-    }
-    @media (max-width: 600px) {
-      table, thead, tbody, th, td, tr { display: block; }
-      thead { display: none; }
-      tr {
-        margin-bottom: 16px;
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        padding: 12px;
-      }
-      td {
-        border: none;
-        padding: 6px 0;
-        display: flex;
-        justify-content: space-between;
-      }
-      td::before {
-        content: attr(data-label);
-        font-weight: 600;
-        color: #555;
-      }
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Horarios de Trenes</h1>
-    <p>España · Renfe · AVE · Avant · Alvia</p>
-  </header>
+  <h1>Horarios de Trenes</h1>
+  <p class="subtitle">Sevilla Santa Justa ↔ Barcelona Sants</p>
 
-  <div class="container">
-    <div class="search-box">
-      <input type="text" id="search" placeholder="Buscar por origen, destino o tren..." onkeyup="filterTable()">
-    </div>
-
-    <table id="schedule">
+  <!-- ===== SEVILLA → BARCELONA ===== -->
+  <div class="section-title">Sevilla → Barcelona</div>
+  <div class="table-wrapper">
+    <table>
       <thead>
         <tr>
-          <th>Tren</th>
-          <th>Origen</th>
-          <th>Destino</th>
-          <th>Salida</th>
-          <th>Llegada</th>
-          <th>Duración</th>
+          <th></th>
+          <th class="train">IRY 6011</th>
+          <th class="train">AVE 3943</th>
+          <th class="train">AVE 3941</th>
+          <th class="train">IRY 6015</th>
+          <th class="train">OGV 6415</th>
+        </tr>
+        <tr>
+          <th></th>
+          <th class="days">ежедневно</th>
+          <th class="days">ежедневно</th>
+          <th class="days">ежедневно</th>
+          <th class="days">ежедневно</th>
+          <th class="days">пн, пт, сб, вс</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td data-label="Tren"><span class="train-type ave">AVE</span> 03081</td>
-          <td data-label="Origen">Madrid Puerta de Atocha</td>
-          <td data-label="Destino">Barcelona Sants</td>
-          <td data-label="Salida">06:20</td>
-          <td data-label="Llegada">08:45</td>
-          <td data-label="Duración">2h 25m</td>
+          <td class="station">Sevilla Santa Justa</td>
+          <td>06:47</td>
+          <td>08:37</td>
+          <td>16:17</td>
+          <td>16:26</td>
+          <td>17:02</td>
         </tr>
         <tr>
-          <td data-label="Tren"><span class="train-type ave">AVE</span> 03101</td>
-          <td data-label="Origen">Madrid Puerta de Atocha</td>
-          <td data-label="Destino">Barcelona Sants</td>
-          <td data-label="Salida">07:30</td>
-          <td data-label="Llegada">10:05</td>
-          <td data-label="Duración">2h 35m</td>
+          <td class="station">Córdoba Central</td>
+          <td>07:28 / 07:30</td>
+          <td>09:19 / 09:33</td>
+          <td>16:59 / 17:09</td>
+          <td>17:07 / 17:09</td>
+          <td>17:44 / 17:47</td>
         </tr>
         <tr>
-          <td data-label="Tren"><span class="train-type ave">AVE</span> 02070</td>
-          <td data-label="Origen">Madrid Puerta de Atocha</td>
-          <td data-label="Destino">Sevilla Santa Justa</td>
-          <td data-label="Salida">08:00</td>
-          <td data-label="Llegada">10:30</td>
-          <td data-label="Duración">2h 30m</td>
+          <td class="station">Puertollano</td>
+          <td></td>
+          <td></td>
+          <td>18:00 / 18:02</td>
+          <td></td>
+          <td></td>
         </tr>
         <tr>
-          <td data-label="Tren"><span class="train-type avant">Avant</span> 08100</td>
-          <td data-label="Origen">Madrid Chamartín</td>
-          <td data-label="Destino">Valladolid Campo Grande</td>
-          <td data-label="Salida">08:15</td>
-          <td data-label="Llegada">09:15</td>
-          <td data-label="Duración">1h 00m</td>
+          <td class="station">Ciudad Real</td>
+          <td>08:24 / 08:26</td>
+          <td>10:27 / 10:29</td>
+          <td>18:15 / 18:17</td>
+          <td></td>
+          <td></td>
         </tr>
         <tr>
-          <td data-label="Tren"><span class="train-type alvia">Alvia</span> 04180</td>
-          <td data-label="Origen">Madrid Chamartín</td>
-          <td data-label="Destino">A Coruña</td>
-          <td data-label="Salida">09:05</td>
-          <td data-label="Llegada">15:40</td>
-          <td data-label="Duración">6h 35m</td>
+          <td class="station">Madrid-Puerta de Atocha</td>
+          <td>09:31 / 09:57</td>
+          <td></td>
+          <td></td>
+          <td>19:04 / 19:29</td>
+          <td>19:42 / 20:10</td>
         </tr>
         <tr>
-          <td data-label="Tren"><span class="train-type ave">AVE</span> 03093</td>
-          <td data-label="Origen">Barcelona Sants</td>
-          <td data-label="Destino">Madrid Puerta de Atocha</td>
-          <td data-label="Salida">09:25</td>
-          <td data-label="Llegada">12:00</td>
-          <td data-label="Duración">2h 35m</td>
+          <td class="station">Zaragoza Delicias</td>
+          <td>11:34 / 11:35</td>
+          <td>12:46 / 12:49</td>
+          <td>20:52 / 20:54</td>
+          <td>21:04 / 21:05</td>
+          <td>21:47 / 21:50</td>
         </tr>
         <tr>
-          <td data-label="Tren"><span class="train-type md">MD</span> 17900</td>
-          <td data-label="Origen">Valencia Joaquín Sorolla</td>
-          <td data-label="Destino">Alicante</td>
-          <td data-label="Salida">10:10</td>
-          <td data-label="Llegada">11:45</td>
-          <td data-label="Duración">1h 35m</td>
+          <td class="station">Lérida/Lleida</td>
+          <td></td>
+          <td>13:36 / 13:38</td>
+          <td>21:41 / 21:43</td>
+          <td></td>
+          <td></td>
         </tr>
         <tr>
-          <td data-label="Tren"><span class="train-type ave">AVE</span> 02120</td>
-          <td data-label="Origen">Sevilla Santa Justa</td>
-          <td data-label="Destino">Madrid Puerta de Atocha</td>
-          <td data-label="Salida">11:00</td>
-          <td data-label="Llegada">13:30</td>
-          <td data-label="Duración">2h 30m</td>
+          <td class="station">Camp de Tarragona</td>
+          <td>12:39 / 12:41</td>
+          <td>14:10 / 14:12</td>
+          <td>22:15 / 22:17</td>
+          <td>22:09 / 22:10</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="station">Barcelona Sants</td>
+          <td>13:21</td>
+          <td>14:54</td>
+          <td>22:59</td>
+          <td>22:50</td>
+          <td>23:28</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===== BARCELONA → SEVILLA ===== -->
+  <div class="section-title">Barcelona → Sevilla</div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th class="train">OGV 6410</th>
+          <th class="train">AVE 3940</th>
+          <th class="train">IRY 6012</th>
+          <th class="train">IRY 6014</th>
+          <th class="train">AVE 3942</th>
+        </tr>
+        <tr>
+          <th></th>
+          <th class="days">пн, пт, сб, вс</th>
+          <th class="days">ежедневно</th>
+          <th class="days">ежедневно</th>
+          <th class="days">ежедневно</th>
+          <th class="days">ежедневно</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="station">Barcelona Sants</td>
+          <td>07:35</td>
+          <td>08:30</td>
+          <td>08:45</td>
+          <td>13:13</td>
+          <td>15:41</td>
+        </tr>
+        <tr>
+          <td class="station">Camp de Tarragona</td>
+          <td></td>
+          <td>09:03 / 09:05</td>
+          <td>09:18 / 09:19</td>
+          <td>13:44 / 13:46</td>
+          <td>16:15 / 16:17</td>
+        </tr>
+        <tr>
+          <td class="station">Lérida/Lleida</td>
+          <td></td>
+          <td>09:33 / 09:35</td>
+          <td></td>
+          <td></td>
+          <td>16:45 / 16:47</td>
+        </tr>
+        <tr>
+          <td class="station">Zaragoza Delicias</td>
+          <td>09:07 / 09:10</td>
+          <td>10:20 / 10:22</td>
+          <td>10:24 / 10:25</td>
+          <td>14:47 / 14:48</td>
+          <td>17:31 / 17:34</td>
+        </tr>
+        <tr>
+          <td class="station">Madrid-Puerta de Atocha</td>
+          <td>11:05 / 11:40</td>
+          <td></td>
+          <td>12:16 / 12:46</td>
+          <td>16:37 / 17:00</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="station">Ciudad Real</td>
+          <td></td>
+          <td>12:36 / 12:38</td>
+          <td>13:39 / 13:41</td>
+          <td></td>
+          <td>19:49 / 19:51</td>
+        </tr>
+        <tr>
+          <td class="station">Puertollano</td>
+          <td></td>
+          <td>12:52 / 12:54</td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="station">Córdoba Central</td>
+          <td>13:25 / 13:28</td>
+          <td>13:35 / 13:42</td>
+          <td>14:37 / 14:40</td>
+          <td>18:43 / 18:45</td>
+          <td>20:59 / 21:07</td>
+        </tr>
+        <tr>
+          <td class="station">Sevilla Santa Justa</td>
+          <td>14:21</td>
+          <td>14:47</td>
+          <td>15:34</td>
+          <td>19:39</td>
+          <td>22:09</td>
         </tr>
       </tbody>
     </table>
   </div>
 
   <footer>
-    Datos de ejemplo · Actualiza la tabla con horarios reales de Renfe
+    Datos de ejemplo · Sevilla ↔ Barcelona
   </footer>
-
-  <script>
-    function filterTable() {
-      const input = document.getElementById("search");
-      const filter = input.value.toLowerCase();
-      const rows = document.querySelectorAll("#schedule tbody tr");
-
-      rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(filter) ? "" : "none";
-      });
-    }
-  </script>
 </body>
 </html>
