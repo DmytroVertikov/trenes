@@ -238,46 +238,37 @@ footer {
   padding-bottom: 20px;
 }
 /* ===== Мобильная версия — сужаем первый столбец ===== */
+
 ```css
 @media (max-width: 700px) {
-  /* Первый столбец — фиксированная ширина */
-  td.station,
-  th:first-child {
-    width: 100px;
-    min-width: 100px;
-    max-width: 100px;
-
-    padding-left: 8px !important;
-    padding-right: 6px !important;
-
-    font-size: 0.78rem;
-    line-height: 1.25;
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
-
-  th:first-child {
-    font-size: 0.75rem;
-  }
 
   table {
-    font-size: 0.8rem;
+    table-layout: fixed;
+    width: max-content;
   }
 
-  th,
-  td {
-    padding: 6px 3px;
+  /* Первый столбец */
+  th:first-child,
+  td:first-child {
+    width: 100px !important;
+    min-width: 100px !important;
+    max-width: 100px !important;
+
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: normal;
   }
 
   /* Остальные столбцы */
   th:not(:first-child),
-  td:not(.station) {
-    min-width: 78px;
+  td:not(:first-child) {
     width: 78px;
-    padding-left: 4px;
-    padding-right: 4px;
+    min-width: 78px;
+    max-width: 82px;
+
     text-align: center;
     white-space: nowrap;
+
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum";
     letter-spacing: 0;
@@ -286,10 +277,24 @@ footer {
   /* Последний столбец */
   th:last-child,
   td:last-child {
-    min-width: 82px;
     width: 82px;
-    padding-left: 2px;
-    padding-right: 2px;
-    text-align: center;
+    min-width: 82px;
+    max-width: 82px;
+  }
+
+  th,
+  td {
+    padding: 6px 4px;
+  }
+
+  th:first-child {
+    font-size: 0.75rem;
+  }
+
+  td:first-child {
+    font-size: 0.78rem;
+    line-height: 1.25;
+    padding-left: 8px !important;
+    padding-right: 6px !important;
   }
 }
