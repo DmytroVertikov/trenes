@@ -89,6 +89,20 @@ th {
   vertical-align: top;
 }
 
+.th-train {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.th-logo {
+  height: 13px;
+  width: auto;
+  filter: brightness(0) invert(1);
+}
+
 th .train-num {
   display: block;
   font-size: 0.95rem;
