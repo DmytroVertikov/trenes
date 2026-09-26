@@ -147,6 +147,17 @@ tr:hover td.station {
   background: #ffeaea;
 }
 
+td:not(.station) {
+  font-variant-numeric: tabular-nums;   
+  font-feature-settings: "tnum";
+  letter-spacing: -0.2px;
+}
+
+th:not(:first-child),
+td:not(.station) {
+  min-width: 88px;
+}
+
 /* ===== Заметки ===== */
 .note {
   max-width: 1100px;
@@ -253,8 +264,8 @@ footer {
 
   th:not(:first-child),
   td:not(.station) {
-    min-width: 74px;
-    padding-left: 6px;
-    padding-right: 6px;
+    min-width: 78px;
+    padding-left: 5px;
+    padding-right: 5px;
   }
 }
