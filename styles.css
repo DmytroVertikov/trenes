@@ -219,3 +219,28 @@ footer {
   margin-top: 20px;
   padding-bottom: 20px;
 }
+/* ===== Мобильная версия — сужаем первый столбец ===== */
+@media (max-width: 700px) {
+  td.station,
+  th:first-child {
+    max-width: 110px;
+    min-width: 90px;
+    padding-left: 8px !important;
+    padding-right: 6px !important;
+    font-size: 0.78rem;
+    line-height: 1.25;
+    white-space: normal;          /* разрешаем перенос названия станции */
+  }
+
+  th:first-child {
+    font-size: 0.75rem;
+  }
+
+  table {
+    font-size: 0.8rem;
+  }
+
+  th, td {
+    padding: 6px 3px;
+  }
+}
