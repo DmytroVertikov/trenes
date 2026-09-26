@@ -13,18 +13,19 @@
 </header
 
 <div class="search-wrapper">
-    <div class="search-fields">
-        <input type="text" id="fromInput" list="stationsList" placeholder="Origen" autocomplete="off">
-        <button id="swapBtn" type="button" aria-label="Intercambiar">⇄</button>
-        <input type="text" id="toInput" list="stationsList" placeholder="Destino" autocomplete="off">
+  <div class="search-fields">
+    <div class="field-wrap">
+      <input type="text" id="fromInput" placeholder="Origen" autocomplete="off">
+      <div class="suggestions" id="fromSuggestions"></div>
     </div>
-    <datalist id="stationsList">
-        <option value="Sevilla">
-        <option value="Barcelona">
-        <option value="Zaragoza">
-        <option value="Madrid">
-        <option value="Oviedo">
-    </datalist>
+
+    <button id="swapBtn" type="button" aria-label="Intercambiar">⇄</button>
+
+    <div class="field-wrap">
+      <input type="text" id="toInput" placeholder="Destino" autocomplete="off">
+      <div class="suggestions" id="toSuggestions"></div>
+    </div>
+  </div>
 </div>
 
 <div class="container">
