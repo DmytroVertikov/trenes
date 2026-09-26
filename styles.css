@@ -322,10 +322,12 @@ footer {
     }
   
     .operator-alvia {
+        width: 24px;  
         height: 24px;
     }
 
     .operator-avlo {
+        width: 24px;
         height: 24px;
     }
 }
