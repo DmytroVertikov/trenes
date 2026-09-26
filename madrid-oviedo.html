@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Madrid ↔ Oviedo — Horarios</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f5f5f5;
+      color: #222;
+      padding: 20px 10px 40px;
+    }
+    .top-bar {
+      max-width: 1100px;
+      margin: 0 auto 20px;
+    }
+    .back {
+      display: inline-block;
+      background: #c60b1e;
+      color: white;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .back:hover { background: #a00918; }
+    h1 {
+      text-align: center;
+      margin-bottom: 6px;
+      font-size: 1.5rem;
+    }
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 24px;
+      font-size: 0.95rem;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+      margin-bottom: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      max-width: 1100px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 900px;
+      font-size: 0.84rem;
+    }
+    th {
+      background: #c60b1e;
+      color: white;
+      padding: 8px 4px;
+      font-weight: 600;
+      white-space: nowrap;
+      vertical-align: top;
+    }
+    th .train-num {
+      display: block;
+      font-size: 0.95rem;
+      margin-bottom: 2px;
+    }
+    th .route-note {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 500;
+      opacity: 0.9;
+      line-height: 1.25;
+      margin-top: 3px;
+    }
+    th.days {
+      background: #9b0a18;
+      font-size: 0.68rem;
+      font-weight: 500;
+      padding: 5px 4px;
+    }
+    td {
+      padding: 7px 4px;
+      text-align: center;
+      border-bottom: 1px solid #eee;
+      white-space: nowrap;
+    }
+    td.station {
+      text-align: left;
+      font-weight: 600;
+      padding-left: 12px;
+      background: #fafafa;
+      position: sticky;
+      left: 0;
+      z-index: 1;
+    }
+    tr:hover td { background: #fff5f5; }
+    tr:hover td.station { background: #ffeaea; }
+    .section-title {
+      text-align: center;
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin: 28px 0 12px;
+      color: #c60b1e;
+    }
+    .note {
+      max-width: 1100px;
+      margin: 0 auto 28px;
+      background: #fff8e6;
+      border-left: 4px solid #e67e22;
+      padding: 12px 16px;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.88rem;
+      color: #555;
+      line-height: 1.45;
+    }
+    footer {
+      text-align: center;
+      color: #888;
+      font-size: 0.85rem;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <a href="index.html" class="back">← Volver</a>
+  </div>
+
+  <h1>Madrid ↔ Oviedo</h1>
+  <p class="subtitle">Horarios de trenes · AVE · Alvia · Avlo</p>
+
+  <!-- ===== MADRID → OVIEDO ===== -->
+  <div class="section-title">Madrid → Oviedo</div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>
+            <span class="train-num">A 4201</span>
+            <span class="route-note">→ Gijón</span>
+          </th>
+          <th>
+            <span class="train-num">A 4071</span>
+            <span class="route-note">→ Gijón</span>
+          </th>
+          <th>
+            <span class="train-num">A 4091</span>
+            <span class="route-note">→ Gijón</span>
+          </th>
+          <th>
+            <span class="train-num">AVE 4121</span>
+            <span class="route-note">→ Gijón</span>
+          </th>
+          <th>
+            <span class="train-num">AVE 4131</span>
+            <span class="route-note">→ Gijón</span>
+          </th>
+          <th>
+            <span class="train-num">AVE 4161</span>
+            <span class="route-note">→ Gijón</span>
+          </th>
+          <th>
+            <span class="train-num">A 4181</span>
+            <span class="route-note">→ Gijón</span>
+          </th>
+        </tr>
+        <tr>
+          <th></th>
+          <th class="days">lun–vie</th>
+          <th class="days">sábado</th>
+          <th class="days">diario (exc. sáb)</th>
+          <th class="days">diario</th>
+          <th class="days">diario</th>
+          <th class="days">diario (exc. sáb)</th>
+          <th class="days">diario</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="station">Madrid-Chamartín</td>
+          <td>07:04</td>
+          <td>07:32</td>
+          <td>09:15</td>
+          <td>11:23</td>
+          <td>14:59</td>
+          <td>16:37</td>
+          <td>18:21</td>
+        </tr>
+        <tr>
+          <td class="station">Segovia Guiomar</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td>11:49 / 11:51</td>
+          <td>15:24 / 15:26</td>
+          <td></td>
+          <td>18:51</td>
+        </tr>
+        <tr>
+          <td class="station">Valladolid Campo Grande</td>
+          <td>08:05 / 08:07</td>
+          <td>08:33 / 08:35</td>
+          <td>10:16 / 10:18</td>
+          <td>12:23 / 12:25</td>
+          <td>15:59 / 16:01</td>
+          <td>17:31 / 17:33</td>
+          <td>19:33 / 19:35</td>
+        </tr>
+        <tr>
+          <td class="station">Palencia</td>
+          <td>08:32 / 08:34</td>
+          <td>09:00 / 09:02</td>
+          <td>10:43 / 10:45</td>
+          <td>12:48 / 12:50</td>
+          <td>16:23 / 16:25</td>
+          <td></td>
+          <td>20:18 / 20:20</td>
+        </tr>
+        <tr>
+          <td class="station">León</td>
+          <td>09:25 / 09:27</td>
+          <td>09:48 / 09:50</td>
+          <td>11:36 / 11:38</td>
+          <td>13:41 / 13:43</td>
+          <td>17:09 / 17:12</td>
+          <td>18:43 / 18:45</td>
+          <td>21:11 / 21:14</td>
+        </tr>
+        <tr>
+          <td class="station">Pola de Lena</td>
+          <td>10:02 / 10:04</td>
+          <td>10:24 / 10:26</td>
+          <td></td>
+          <td>14:17 / 14:19</td>
+          <td></td>
+          <td></td>
+          <td>21:49 / 21:51</td>
+        </tr>
+        <tr>
+          <td class="station">Mieres-Puente</td>
+          <td></td>
+          <td></td>
+          <td>12:27 / 12:29</td>
+          <td>14:33 / 14:35</td>
+          <td></td>
+          <td></td>
+          <td>22:05 / 22:07</td>
+        </tr>
+        <tr>
+          <td class="station">Oviedo</td>
+          <td>10:33 / 10:36</td>
+          <td>10:55 / 10:58</td>
+          <td>12:44 / 12:47</td>
+          <td>14:51 / 14:54</td>
+          <td>18:13 / 18:16</td>
+          <td>19:48 / 19:51</td>
+          <td>22:22 / 22:24</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    Todos estos trenes continúan después de Oviedo hasta <strong>Gijón</strong> (algunos también hasta Avilés).
+  </div>
+
+  <!-- ===== OVIEDO → MADRID ===== -->
+  <div class="section-title">Oviedo → Madrid</div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>
+            <span class="train-num">AVE 4060</span>
+            <span class="route-note">desde Gijón</span>
+          </th>
+          <th>
+            <span class="train-num">A 4080</span>
+            <span class="route-note">desde Gijón</span>
+          </th>
+          <th>
+            <span class="train-num">AVE 4280</span>
+            <span class="route-note">desde Gijón</span>
+          </th>
+          <th>
+            <span class="train-num">AVE 4110</span>
+            <span class="route-note">desde Gijón</span>
+          </th>
+          <th>
+            <span class="train-num">A 4140</span>
+            <span class="route-note">desde Gijón<br>→ Alicante</span>
+          </th>
+          <th>
+            <span class="train-num">A 4170</span>
+            <span class="route-note">desde Gijón</span>
+          </th>
+          <th>
+            <span class="train-num">AVL 4190</span>
+            <span class="route-note">desde Gijón</span>
+          </th>
+        </tr>
+        <tr>
+          <th></th>
+          <th class="days">lun–vie</th>
+          <th class="days">diario (exc. sáb)</th>
+          <th class="days">sábado</th>
+          <th class="days">diario</th>
+          <th class="days">diario</th>
+          <th class="days">diario (exc. sáb)</th>
+          <th class="days">diario</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="station">Oviedo</td>
+          <td>06:25 / 06:29</td>
+          <td>09:16 / 09:20</td>
+          <td>09:20 / 09:24</td>
+          <td>11:36 / 11:40</td>
+          <td>15:53 / 15:57</td>
+          <td>17:36 / 17:40</td>
+          <td>18:52 / 18:56</td>
+        </tr>
+        <tr>
+          <td class="station">Mieres-Puente</td>
+          <td></td>
+          <td>09:36 / 09:38</td>
+          <td>09:41 / 09:43</td>
+          <td></td>
+          <td>16:13 / 16:15</td>
+          <td></td>
+          <td>19:13 / 19:15</td>
+        </tr>
+        <tr>
+          <td class="station">Pola de Lena</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td>16:31 / 16:33</td>
+          <td>18:10 / 18:12</td>
+          <td>19:31 / 19:33</td>
+        </tr>
+        <tr>
+          <td class="station">León</td>
+          <td>07:34 / 07:36</td>
+          <td>10:28 / 10:31</td>
+          <td>10:32 / 10:34</td>
+          <td>12:44 / 12:46</td>
+          <td>17:07 / 17:09</td>
+          <td>18:51 / 18:53</td>
+          <td>20:07 / 20:10</td>
+        </tr>
+        <tr>
+          <td class="station">Palencia</td>
+          <td></td>
+          <td>11:22 / 11:24</td>
+          <td></td>
+          <td></td>
+          <td>17:55 / 17:57</td>
+          <td>19:43 / 19:45</td>
+          <td>20:57 / 20:59</td>
+        </tr>
+        <tr>
+          <td class="station">Valladolid Campo Grande</td>
+          <td>08:39 / 08:41</td>
+          <td>11:48 / 11:50</td>
+          <td>11:42 / 11:44</td>
+          <td>13:56 / 13:58</td>
+          <td>18:21 / 18:23</td>
+          <td>20:08 / 20:10</td>
+          <td>21:21 / 21:23</td>
+        </tr>
+        <tr>
+          <td class="station">Segovia Guiomar</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td>14:32 / 14:34</td>
+          <td></td>
+          <td></td>
+          <td>21:56 / 21:58</td>
+        </tr>
+        <tr>
+          <td class="station">Madrid-Chamartín</td>
+          <td>09:37</td>
+          <td>12:52</td>
+          <td>12:40</td>
+          <td>15:00</td>
+          <td>19:24 / 20:00</td>
+          <td>21:12</td>
+          <td>22:25</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    Casi todos los trenes tienen origen en <strong>Gijón</strong> (o Avilés).<br>
+    El tren <strong>A 4140</strong> después de Madrid continúa hacia <strong>Alicante</strong> (Cuenca → Albacete → Alicante).
+  </div>
+
+  <footer>
+    Madrid ↔ Oviedo · Datos de ejemplo
+  </footer>
+</body>
+</html>
