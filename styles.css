@@ -132,6 +132,12 @@ td.station {
   padding-left: 12px;
 }
 
+th:not(:first-child),
+td:not(.station) {
+  min-width: 72px;
+  padding-left: 6px;
+  padding-right: 6px;
+
 tr:hover td {
   background: #fff5f5;
 }
@@ -242,5 +248,12 @@ footer {
 
   th, td {
     padding: 6px 3px;
+  }
+
+  th:not(:first-child),
+  td:not(.station) {
+    min-width: 62px;
+    padding-left: 4px;
+    padding-right: 4px;
   }
 }
