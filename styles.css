@@ -297,10 +297,12 @@ footer {
     height: 27px;
 }
 
-.operator-frequency {
-    font-size: 13px;
-    color: #666;
-    white-space: nowrap;
+.operator-alvia {
+    height: 24px;
+}
+
+.operator-avlo {
+    height: 24px;
 }
 
 @media (max-width: 600px) {
@@ -322,12 +324,10 @@ footer {
     }
   
     .operator-alvia {
-        width: 24px;  
         height: 24px;
     }
 
     .operator-avlo {
-        width: 24px;
         height: 24px;
     }
 }
