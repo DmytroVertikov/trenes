@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sevilla ↔ Barcelona — Horarios</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f5f5f5;
+      color: #222;
+      padding: 20px 10px 40px;
+    }
+    .top-bar {
+      max-width: 1000px;
+      margin: 0 auto 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .back {
+      display: inline-block;
+      background: #c60b1e;
+      color: white;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .back:hover { background: #a00918; }
+    h1 {
+      text-align: center;
+      margin-bottom: 6px;
+      font-size: 1.5rem;
+    }
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 24px;
+      font-size: 0.95rem;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+      margin-bottom: 40px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      max-width: 1000px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 780px;
+      font-size: 0.88rem;
+    }
+    th {
+      background: #c60b1e;
+      color: white;
+      padding: 10px 6px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    th.days {
+      background: #9b0a18;
+      font-size: 0.72rem;
+      font-weight: 500;
+    }
+    td {
+      padding: 8px 5px;
+      text-align: center;
+      border-bottom: 1px solid #eee;
+      white-space: nowrap;
+    }
+    td.station {
+      text-align: left;
+      font-weight: 600;
+      padding-left: 12px;
+      background: #fafafa;
+      position: sticky;
+      left: 0;
+      z-index: 1;
+    }
+    tr:hover td { background: #fff5f5; }
+    tr:hover td.station { background: #ffeaea; }
+    .section-title {
+      text-align: center;
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin: 28px 0 12px;
+      color: #c60b1e;
+    }
+    footer {
+      text-align: center;
+      color: #888;
+      font-size: 0.85rem;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <a href="index.html" class="back">← Volver</a>
+  </div>
+
+  <h1>Sevilla ↔ Barcelona</h1>
+  <p class="subtitle">Horarios de trenes · AVE · IRYO · Ouigo</p>
+
+  <!-- SEVILLA → BARCELONA -->
+  <div class="section-title">Sevilla → Barcelona</div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>IRY 6011</th>
+          <th>AVE 3943</th>
+          <th>AVE 3941</th>
+          <th>IRY 6015</th>
+          <th>OGV 6415</th>
+        </tr>
+        <tr>
+          <th></th>
+          <th class="days">diario</th>
+          <th class="days">diario</th>
+          <th class="days">diario</th>
+          <th class="days">diario</th>
+          <th class="days">lun, vie, sáb, dom</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="station">Sevilla Santa Justa</td>
+          <td>06:47</td>
+          <td>08:37</td>
+          <td>16:17</td>
+          <td>16:26</td>
+          <td>17:02</td>
+        </tr>
+        <tr>
+          <td class="station">Córdoba Central</td>
+          <td>07:28 / 07:30</td>
+          <td>09:19 / 09:33</td>
+          <td>16:59 / 17:09</td>
+          <td>17:07 / 17:09</td>
+          <td>17:44 / 17:47</td>
+        </tr>
+        <tr>
+          <td class="station">Puertollano</td>
+          <td></td>
+          <td></td>
+          <td>18:00 / 18:02</td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="station">Ciudad Real</td>
+          <td>08:24 / 08:26</td>
+          <td>10:27 / 10:29</td>
+          <td>18:15 / 18:17</td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="station">Madrid-Puerta de Atocha</td>
+          <td>09:31 / 09:57</td>
+          <td></td>
+          <td></td>
+          <td>19:04 / 19:29</td>
+          <td>19:42 / 20:10</td>
+        </tr>
+        <tr>
+          <td class="station">Zaragoza Delicias</td>
+          <td>11:34 / 11:35</td>
+          <td>12:46 / 12:49</td>
+          <td>20:52 / 20:54</td>
+          <td>21:04 / 21:05</td>
+          <td>21:47 / 21:50</td>
+        </tr>
+        <tr>
+          <td class="station">Lérida / Lleida</td>
+          <td></td>
+          <td>13:36 / 13:38</td>
+          <td>21:41 / 21:43</td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="station">Camp de Tarragona</td>
+          <td>12:39 / 12:41</td>
+          <td>14:10 / 14:12</td>
+          <td>22:15 / 22:17</td>
+          <td>22:09 / 22:10</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="station">Barcelona Sants</td>
+          <td>13:21</td>
+          <td>14:54</td>
+          <td>22:59</td>
+          <td>22:50</td>
+          <td>23:28</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- BARCELONA → SEVILLA -->
+  <div class="section-title">Barcelona → Sevilla</div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>OGV 6410</th>
+          <th>AVE 3940</th>
+          <th>IRY 6012</th>
+          <th>IRY 6014</th>
+          <th>AVE 3942</th>
+        </tr>
+        <tr>
+          <th></th>
+          <th class="days">lun, vie, sáb, dom</th>
+          <th class="days">diario</th>
+          <th class="days">diario</th>
+          <th class="days">diario</th>
+          <th class="days">diario</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="station">Barcelona Sants</td>
+          <td>07:35</td>
+          <td>08:30</td>
+          <td>08:45</td>
+          <td>13:13</td>
+          <td>15:41</td>
+        </tr>
+        <tr>
+          <td class="station">Camp de Tarragona</td>
+          <td></td>
+          <td>09:03 / 09:05</td>
+          <td>09:18 / 09:19</td>
+          <td>13:44 / 13:46</td>
+          <td>16:15 / 16:17</td>
+        </tr>
+        <tr>
+          <td class="station">Lérida / Lleida</td>
+          <td></td>
+          <td>09:33 / 09:35</td>
+          <td></td>
+          <td></td>
+          <td>16:45 / 16:47</td>
+        </tr>
+        <tr>
+          <td class="station">Zaragoza Delicias</td>
+          <td>09:07 / 09:10</td>
+          <td>10:20 / 10:22</td>
+          <td>10:24 / 10:25</td>
+          <td>14:47 / 14:48</td>
+          <td>17:31 / 17:34</td>
+        </tr>
+        <tr>
+          <td class="station">Madrid-Puerta de Atocha</td>
+          <td>11:05 / 11:40</td>
+          <td></td>
+          <td>12:16 / 12:46</td>
+          <td>16:37 / 17:00</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="station">Ciudad Real</td>
+          <td></td>
+          <td>12:36 / 12:38</td>
+          <td>13:39 / 13:41</td>
+          <td></td>
+          <td>19:49 / 19:51</td>
+        </tr>
+        <tr>
+          <td class="station">Puertollano</td>
+          <td></td>
+          <td>12:52 / 12:54</td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="station">Córdoba Central</td>
+          <td>13:25 / 13:28</td>
+          <td>13:35 / 13:42</td>
+          <td>14:37 / 14:40</td>
+          <td>18:43 / 18:45</td>
+          <td>20:59 / 21:07</td>
+        </tr>
+        <tr>
+          <td class="station">Sevilla Santa Justa</td>
+          <td>14:21</td>
+          <td>14:47</td>
+          <td>15:34</td>
+          <td>19:39</td>
+          <td>22:09</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer>
+    Sevilla ↔ Barcelona · Datos de ejemplo
+  </footer>
+</body>
+</html>
