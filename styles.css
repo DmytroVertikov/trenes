@@ -239,33 +239,51 @@ footer {
 }
 /* ===== Мобильная версия — сужаем первый столбец ===== */
 @media (max-width: 700px) {
-  td.station,
-  th:first-child {
-    max-width: 110px;
-    min-width: 90px;
-    padding-left: 8px !important;
-    padding-right: 6px !important;
-    font-size: 0.78rem;
-    line-height: 1.25;
-    white-space: normal;          /* разрешаем перенос названия станции */
-  }
+    td.station,
+    th:first-child {
+        max-width: 110px;
+        min-width: 90px;
+        padding-left: 8px !important;
+        padding-right: 6px !important;
+        font-size: 0.78rem;
+        line-height: 1.25;
+        white-space: normal;
+    }
 
-  th:first-child {
-    font-size: 0.75rem;
-  }
+    th:first-child {
+        font-size: 0.75rem;
+    }
 
-  table {
-    font-size: 0.8rem;
-  }
+    table {
+        font-size: 0.8rem;
+    }
 
-  th, td {
-    padding: 6px 3px;
-  }
+    th,
+    td {
+        padding: 6px 3px;
+    }
 
-  th:not(:first-child),
-  td:not(.station) {
-    min-width: 78px;
-    padding-left: 5px;
-    padding-right: 5px;
-  }
+    /* Все столбцы с временем/цифрами */
+    th:not(:first-child),
+    td:not(.station) {
+        min-width: 78px;
+        width: 78px;
+        padding-left: 4px;
+        padding-right: 4px;
+        text-align: center;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: "tnum";
+        letter-spacing: 0;
+    }
+
+    /* Последний столбец */
+    th:last-child,
+    td:last-child {
+        min-width: 82px;
+        width: 82px;
+        padding-left: 2px;
+        padding-right: 2px;
+        text-align: center;
+    }
 }
