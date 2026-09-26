@@ -288,6 +288,49 @@ header p {
   font-size: 0.9rem;
 }
 
+.search-wrapper {
+  max-width: 700px;
+  margin: 0 auto 20px;
+  padding: 0 16px;
+}
+
+.search-fields {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-fields input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 1rem;
+  background: white;
+  min-width: 0;
+}
+
+.search-fields input:focus {
+  outline: none;
+  border-color: #c60b1e;
+}
+
+#swapBtn {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #ddd;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: #c60b1e;
+}
+
+#swapBtn:hover {
+  background: #fff5f5;
+}
+
 /* ===== Подвал ===== */
 
 footer {
@@ -367,5 +410,15 @@ footer {
 
   .operator-avlo {
     height: 19px;
+  }
+
+  .search-fields {
+    flex-wrap: wrap;
+  }
+  .search-fields input {
+    flex: 1 1 100%;
+  }
+  #swapBtn {
+    margin: 0 auto;
   }
 }
