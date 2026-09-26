@@ -240,8 +240,7 @@ header p {
 .train-operators {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 14px;
+  gap: 10px;
   flex-wrap: nowrap;
   flex-shrink: 0;
   width: 170px;      
@@ -264,8 +263,9 @@ header p {
 }
 
 .operator-ouigo {
-  height: 22px;
+  height: 26px;
   width: auto;
+  margin: 0 6px;
 }
 
 .operator-alvia {
