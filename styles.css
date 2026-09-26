@@ -12,6 +12,11 @@ body {
   line-height: 1.5;
 }
 
+body > .train-operators {
+  margin: 0 auto 24px;
+  justify-content: center;
+}
+
 /* ===== Шапка и навигация ===== */
 
 .top-bar {
