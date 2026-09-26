@@ -288,6 +288,12 @@ header p {
   font-size: 0.9rem;
 }
 
+.search-wrapper {
+  max-width: 700px;
+  margin: 0 auto 32px;
+  padding: 0 16px;
+}
+
 .search-fields {
   display: flex;
   align-items: center;
