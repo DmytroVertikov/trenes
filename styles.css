@@ -13,6 +13,7 @@ body {
 }
 
 /* ===== Шапка и навигация ===== */
+
 .top-bar {
   max-width: 1100px;
   margin: 0 auto 20px;
@@ -55,6 +56,7 @@ h1 {
 }
 
 /* ===== Таблицы ===== */
+
 .table-wrapper {
   overflow-x: auto;
   margin-bottom: 20px;
@@ -111,7 +113,8 @@ td {
   white-space: nowrap;
 }
 
-/* Закреплённый первый столбец */
+/* ===== Закреплённый первый столбец ===== */
+
 th:first-child,
 td.station {
   position: sticky;
@@ -134,8 +137,8 @@ td.station {
 
 th:not(:first-child),
 td:not(.station) {
-  min-width: 82px;         
-  padding-left: 8px;      
+  min-width: 88px;
+  padding-left: 8px;
   padding-right: 8px;
 }
 
@@ -148,17 +151,13 @@ tr:hover td.station {
 }
 
 td:not(.station) {
-  font-variant-numeric: tabular-nums;   
+  font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
   letter-spacing: -0.2px;
 }
 
-th:not(:first-child),
-td:not(.station) {
-  min-width: 88px;
-}
-
 /* ===== Заметки ===== */
+
 .note {
   max-width: 1100px;
   margin: 0 auto 28px;
@@ -177,6 +176,7 @@ td:not(.station) {
 }
 
 /* ===== Главная страница ===== */
+
 header {
   background: #c60b1e;
   color: white;
@@ -201,14 +201,22 @@ header p {
   padding: 0 16px;
 }
 
+/* ===== Карточки маршрутов ===== */
+
 .route {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
   background: white;
   border-radius: 12px;
   padding: 20px 24px;
   margin-bottom: 16px;
+
   text-decoration: none;
   color: inherit;
+
   box-shadow: 0 3px 10px rgba(0,0,0,0.07);
   transition: transform 0.15s, box-shadow 0.15s;
 }
@@ -220,8 +228,9 @@ header p {
 
 .route h2 {
   font-size: 1.2rem;
-  margin-bottom: 4px;
+  margin-bottom: 0;
   color: #c60b1e;
+  white-space: nowrap;
 }
 
 .route p {
@@ -229,7 +238,63 @@ header p {
   font-size: 0.9rem;
 }
 
+/* ===== Логотипы перевозчиков ===== */
+
+.train-operators {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+
+  margin-top: 0;
+}
+
+.operator-logo {
+  display: block;
+  width: auto;
+  height: 24px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.operator-ave {
+  height: 25px;
+}
+
+.operator-iryo {
+  height: 24px;
+}
+
+.operator-ouigo {
+  width: 27px;
+  height: 27px;
+}
+
+.operator-alvia {
+  height: 24px;
+}
+
+.operator-avlo {
+  height: 24px;
+}
+
+/* ===== Неактивный маршрут ===== */
+
+.route-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.route-disabled p {
+  color: #666;
+  font-size: 0.9rem;
+}
+
 /* ===== Подвал ===== */
+
 footer {
   text-align: center;
   color: #888;
@@ -237,8 +302,11 @@ footer {
   margin-top: 20px;
   padding-bottom: 20px;
 }
-/* ===== Мобильная версия — сужаем первый столбец ===== */
+
+/* ===== Мобильная версия ===== */
+
 @media (max-width: 700px) {
+
   td.station,
   th:first-child {
     max-width: 110px;
@@ -247,7 +315,7 @@ footer {
     padding-right: 6px !important;
     font-size: 0.78rem;
     line-height: 1.25;
-    white-space: normal;          /* разрешаем перенос названия станции */
+    white-space: normal;
   }
 
   th:first-child {
@@ -258,7 +326,8 @@ footer {
     font-size: 0.8rem;
   }
 
-  th, td {
+  th,
+  td {
     padding: 6px 3px;
   }
 
@@ -270,64 +339,41 @@ footer {
   }
 }
 
-.train-operators {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    flex-wrap: wrap;
-    margin-top: 8px;
-}
-
-.operator-logo {
-    display: block;
-    width: auto;
-    object-fit: contain;
-}
-
-.operator-ave {
-    height: 25px;
-}
-
-.operator-iryo {
-    height: 24px;
-}
-
-.operator-ouigo {
-    width: 27px;
-    height: 27px;
-}
-
-.operator-alvia {
-    height: 24px;
-}
-
-.operator-avlo {
-    height: 24px;
-}
+/* ===== Логотипы на маленьких экранах ===== */
 
 @media (max-width: 600px) {
-    .train-operators {
-        gap: 10px;
-    }
 
-    .operator-ave {
-        height: 22px;
-    }
+  .route {
+    padding: 16px 18px;
+    gap: 12px;
+  }
 
-    .operator-iryo {
-        height: 21px;
-    }
+  .route h2 {
+    font-size: 1rem;
+  }
 
-    .operator-ouigo {
-        width: 24px;
-        height: 24px;
-    }
-  
-    .operator-alvia {
-        height: 24px;
-    }
+  .train-operators {
+    gap: 7px;
+  }
 
-    .operator-avlo {
-        height: 24px;
-    }
+  .operator-ave {
+    height: 20px;
+  }
+
+  .operator-iryo {
+    height: 19px;
+  }
+
+  .operator-ouigo {
+    width: 21px;
+    height: 21px;
+  }
+
+  .operator-alvia {
+    height: 19px;
+  }
+
+  .operator-avlo {
+    height: 19px;
+  }
 }
