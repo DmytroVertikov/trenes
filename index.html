@@ -10,11 +10,26 @@
 
 <header>
     <h1>Horarios de Trenes</h1>
-</header>
+</header
+
+<div class="search-wrapper">
+    <div class="search-fields">
+        <input type="text" id="fromInput" list="stationsList" placeholder="Origen" autocomplete="off">
+        <button id="swapBtn" type="button" aria-label="Intercambiar">⇄</button>
+        <input type="text" id="toInput" list="stationsList" placeholder="Destino" autocomplete="off">
+    </div>
+    <datalist id="stationsList">
+        <option value="Sevilla">
+        <option value="Barcelona">
+        <option value="Zaragoza">
+        <option value="Madrid">
+        <option value="Oviedo">
+    </datalist>
+</div>
 
 <div class="container">
 
-    <a href="sevilla-barcelona.html" class="route">
+    <a href="sevilla-barcelona.html" class="route" data-from="sevilla" data-to="barcelona">
         <h2>Sevilla ↔ Barcelona</h2>
 
         <div class="train-operators">
@@ -24,7 +39,7 @@
         </div>
     </a>
 
-    <a href="sevilla-zaragoza.html" class="route">
+    <a href="sevilla-zaragoza.html" class="route" data-from="sevilla" data-to="zaragoza">
         <h2>Sevilla ↔ Zaragoza</h2>
 
         <div class="train-operators">
@@ -34,7 +49,7 @@
         </div>
     </a>
 
-    <a href="madrid-oviedo.html" class="route">
+    <a href="madrid-oviedo.html" class="route" data-from="madrid" data-to="oviedo">
         <h2>Madrid ↔ Oviedo</h2>
 
         <div class="train-operators">
@@ -54,6 +69,6 @@
 <footer>
     Datos de ejemplo · Actualiza con horarios oficiales de Renfe
 </footer>
-
+<script src="search.js"></script>
 </body>
 </html>
