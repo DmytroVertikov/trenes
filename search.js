@@ -67,7 +67,15 @@ function filterRoutes() {
 
     route.style.display = (forwardMatch || reverseMatch) ? '' : 'none';
 
-    if (reverseMatch && !forwardMatch && from && to) {
+    const fromMatchesOrigin = from && routeFrom.includes(from);
+    const fromMatchesDestination = from && !fromMatchesOrigin && routeTo.includes(from);
+
+    const toMatchesDestination = to && routeTo.includes(to);
+    const toMatchesOrigin = to && !toMatchesDestination && routeFrom.includes(to);
+
+    const shouldReverse = fromMatchesDestination || toMatchesOrigin;
+
+    if (shouldReverse) {
       const originalFrom = capitalize(route.dataset.from);
       const originalTo = capitalize(route.dataset.to);
       h2.textContent = `${originalTo} ↔ ${originalFrom}`;
