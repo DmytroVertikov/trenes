@@ -432,6 +432,21 @@ header p {
   white-space: nowrap;
 }
 
+.all-trains-link {
+  display: block;
+  text-align: center;
+  color: #c60b1e;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  margin-top: 8px;
+  padding: 10px;
+}
+
+.all-trains-link:hover {
+  text-decoration: underline;
+}
+
 /* ===== Подвал ===== */
 
 footer {
