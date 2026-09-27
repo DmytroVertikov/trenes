@@ -292,14 +292,13 @@ header p {
   gap: 10px;
   flex-wrap: nowrap;
   flex-shrink: 0;
-  width: 170px;      
+  width: 200px;
 }
 
 .operator-logo {
   display: block;
-  height: 22px;
-  width: auto;
-  max-width: 60px;
+  width: 58px;
+  height: 26px;
   object-fit: contain;
 }
 
@@ -476,7 +475,12 @@ footer {
 
   .train-operators {
     gap: 6px;
-    width: 128px;  
+    width: 150px;
+  }
+
+  .operator-logo {
+    width: 44px;
+    height: 20px;
   }
 
   .operator-ave {
