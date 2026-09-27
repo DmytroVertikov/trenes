@@ -288,6 +288,7 @@ header p {
 .train-operators {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
   flex-wrap: nowrap;
   flex-shrink: 0;
