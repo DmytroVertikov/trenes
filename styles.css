@@ -397,6 +397,41 @@ header p {
   transform: rotate(180deg) scale(0.92);
 }
 
+.table-wrapper--list {
+  max-width: 700px;
+}
+
+.table-wrapper--list table {
+  min-width: 0;
+  width: 100%;
+}
+
+.trains-table th {
+  text-align: left;
+  white-space: nowrap;
+}
+
+.trains-table td {
+  text-align: left;
+  white-space: normal;
+}
+
+.train-num-cell {
+  font-weight: 700;
+  color: #c60b1e;
+  white-space: nowrap;
+}
+
+.route-cell {
+  color: #333;
+}
+
+.freq-cell {
+  color: #666;
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+
 /* ===== Подвал ===== */
 
 footer {
