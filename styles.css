@@ -302,28 +302,6 @@ header p {
   object-fit: contain;
 }
 
-.operator-ave {
-  height: 25px;
-}
-
-.operator-iryo {
-  height: 24px;
-}
-
-.operator-ouigo {
-  height: 26px;
-  width: auto;
-  margin: 0 6px;
-}
-
-.operator-alvia {
-  height: 24px;
-}
-
-.operator-avlo {
-  height: 24px;
-}
-
 /* ===== Неактивный маршрут ===== */
 
 .route-disabled {
@@ -481,28 +459,6 @@ footer {
   .operator-logo {
     width: 44px;
     height: 20px;
-  }
-
-  .operator-ave {
-    height: 20px;
-  }
-
-  .operator-iryo {
-    height: 19px;
-  }
-
-  .operator-ouigo {
-    height: 22px;
-    width: auto;
-    margin: 0 4px;
-  }
-
-  .operator-alvia {
-    height: 19px;
-  }
-
-  .operator-avlo {
-    height: 19px;
   }
 
   .search-fields {
