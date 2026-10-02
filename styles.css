@@ -12,7 +12,8 @@ body {
   line-height: 1.5;
 }
 
-body > .train-operators {
+body > .train-operators,
+#app > .train-operators {
   margin: 0 auto 24px;
   justify-content: center;
 }
@@ -551,4 +552,17 @@ footer {
   #swapBtn {
     margin: 0 auto;
   }
+}
+
+/* ===== Ссылки на страницы поездов ===== */
+
+th .th-code a,
+.train-num-cell a {
+  color: inherit;
+  text-decoration: none;
+}
+
+th .th-code a:hover,
+.train-num-cell a:hover {
+  text-decoration: underline;
 }
