@@ -135,15 +135,26 @@ function stationSelect(i, val) {
     ${S.stations.map((s) => `<option value="${s.id}" ${s.id == val ? "selected" : ""}>${esc(s.name)}</option>`).join("")}
     <option value="__new">➕ новая станция…</option></select>`;
 }
+function splitTime(t) {
+  const m = (t || "").match(/^(\d{1,2}):(\d{2})$/);
+  return m ? [m[1].padStart(2, "0"), m[2]] : ["", ""];
+}
+function timePair(i, key, val) {
+  const [h, m] = splitTime(val);
+  return `<span class="timepair">
+    <input type="text" inputmode="numeric" maxlength="2" data-i="${i}" data-k="${key}" data-part="h"
+      value="${h}" placeholder="чч" pattern="[0-2]?\\d">
+    <span>:</span>
+    <input type="text" inputmode="numeric" maxlength="2" data-i="${i}" data-k="${key}" data-part="m"
+      value="${m}" placeholder="мм" pattern="[0-5]?\\d">
+  </span>`;
+}
 function renderEdit() {
   const stops = cur.stops.map((s, i) => `<tr><td class="small">${i + 1}</td><td>${stationSelect(i, s.station_id)}</td>
-    <td>
-      <span class="timepair">
-        <input type="text" inputmode="numeric" maxlength="2" data-i="${i}" data-k="${key}" data-part="h" value="${h}" placeholder="чч" pattern="[0-2]?\d">
-        <span>:</span>
-        <input type="text" inputmode="numeric" maxlength="2" data-i="${i}" data-k="${key}" data-part="m" value="${m}" placeholder="мм" pattern="[0-5]?\d">
-      </span>
-    </td>
+    <td>${timePair(i, "arrival", s.arrival)}</td>
+    <td>${timePair(i, "departure", s.departure)}</td>
+    <td><button data-act="up" data-i="${i}">↑</button> <button data-act="down" data-i="${i}">↓</button>
+    <button data-act="del" data-i="${i}">✕</button></td></tr>`).join("");</td>
     <td><button data-act="up" data-i="${i}">↑</button> <button data-act="down" data-i="${i}">↓</button>
     <button data-act="del" data-i="${i}">✕</button></td></tr>`).join("");
   const pages = pageDirs().map((d) => `<label><input type="checkbox" data-p="${d.key}" ${cur.pages.has(d.key) ? "checked" : ""}> ${esc(d.label)}</label>`).join("");
