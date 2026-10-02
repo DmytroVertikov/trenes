@@ -74,4 +74,50 @@ function renderRoutes(pages) {
     const types = new Set(p.page_services.map((x) => x.services && x.services.type));
     const [from, to] = p.title.split("↔").map(norm);
     const logos = OPERATORS.filter(([t]) => types.has(t)).map(([t, alt]) =>
-      `<img src="images/${t}.sv
+      `<img src="images/${t}.svg" alt="${alt}" class="operator-logo operator-${t}">`).join("\n            ");
+    return `<a href="page.html?p=${encodeURIComponent(p.slug)}" class="route" data-from="${esc(from)}" data-to="${esc(to || "")}">
+        <h2 data-original="${esc(p.title)}">${esc(p.title)}</h2>
+        <div class="train-operators">
+            ${logos}
+        </div>
+    </a>`;
+  }).join("\n");
+}
+
+async function renderIndex() {
+  const box = document.getElementById("routes");
+  try {
+    const pages = await api("pages?select=slug,title,sort,page_services(services(type))&order=sort");
+    box.innerHTML = renderRoutes(pages);
+  } catch (e) {
+    box.textContent = "No se pudieron cargar los horarios. " + e.message;
+    return;
+  }
+  // поиск подключаем только когда маршруты уже на странице
+  await new Promise((done) => {
+    const sc = document.createElement("script");
+    sc.src = "search.js";
+    sc.onload = sc.onerror = done;
+    document.body.appendChild(sc);
+  });
+  document.dispatchEvent(new Event("DOMContentLoaded")); // на случай, если search.js ждёт это событие
+}
+
+(async () => {
+  const app = document.getElementById("app");
+  const slug = new URLSearchParams(location.search).get("p") || document.body.dataset.page;
+  if (!slug) return location.replace("index.html");
+  if (slug === "index") return renderIndex();
+  try {
+    if (slug === "lista-trenes") {
+      app.innerHTML = renderList(await api("train_list?select=number,freq,origin,destination"));
+    } else {
+      const p = await api("rpc/get_page", { p_slug: slug });
+      if (!p) throw new Error(`Página «${slug}» no encontrada`);
+      document.title = `${p.title} — Horarios`;
+      app.innerHTML = renderPage(p);
+    }
+  } catch (e) {
+    app.textContent = "No se pudieron cargar los horarios. " + e.message;
+  }
+})();
