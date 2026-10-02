@@ -153,8 +153,8 @@ function renderEdit() {
   const stops = cur.stops.map((s, i) => `<tr><td class="small">${i + 1}</td><td>${stationSelect(i, s.station_id)}</td>
     <td>${timePair(i, "arrival", s.arrival)}</td>
     <td>${timePair(i, "departure", s.departure)}</td>
-    <td><button data-act="up" data-i="${i}">↑</button> <button data-act="down" data-i="${i}">↓</button>
-    <button data-act="del" data-i="${i}">✕</button></td></tr>`).join("");</td>
+    <button data-act="up" data-i="${i}">↑</button> <button data-act="down" data-i="${i}">↓</button>
+    <button data-act="del" data-i="${i}">✕</button></td></tr>`).join("");
     <td><button data-act="up" data-i="${i}">↑</button> <button data-act="down" data-i="${i}">↓</button>
     <button data-act="del" data-i="${i}">✕</button></td></tr>`).join("");
   const pages = pageDirs().map((d) => `<label><input type="checkbox" data-p="${d.key}" ${cur.pages.has(d.key) ? "checked" : ""}> ${esc(d.label)}</label>`).join("");
