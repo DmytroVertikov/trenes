@@ -76,6 +76,19 @@ function say(text, kind = "") {
 const stOptions = () => `<datalist id="stlist">${S.stations.map((s) => `<option value="${esc(s.name)}">`).join("")}</datalist>`;
 const findStation = (v) => S.stations.find((s) => s.name.toLowerCase() == v.trim().toLowerCase());
 
+/* Вставляет в rows станции маршрута (между первой и последней совпавшей), сохраняя порядок. Возвращает добавленные id. */
+function mergeRows(rows, route) {
+  const hit = route.map((id, i) => (rows.includes(id) ? i : -1)).filter((i) => i >= 0);
+  if (!hit.length) return [];
+  const added = [];
+  for (let i = hit[0]; i <= hit.at(-1); i++) {
+    if (rows.includes(route[i])) continue;
+    rows.splice(rows.indexOf(route[i - 1]) + 1, 0, route[i]);
+    added.push(route[i]);
+  }
+  return added;
+}
+
 function pageDirs() {
   const m = new Map();
   for (const r of S.ps) { const k = r.page_id + ":" + r.direction; (m.get(k) || m.set(k, []).get(k)).push(r); }
@@ -188,17 +201,26 @@ async function save(btn) {
     else { const r = await db.from("services").insert(row).select("id").single(); if (r.error) throw r.error; id = r.data.id; }
     const r2 = await db.rpc("save_stops", { p_service: id, p_stops: stops }); if (r2.error) throw r2.error;
 
-    const dirs = pageDirs(), warns = [];
+    const dirs = pageDirs(), warns = [], infos = [];
     for (const k of [...c.pages].filter((k) => !c.orig.has(k))) {
       const d = dirs.find((x) => x.key == k);
       const last = Math.max(0, ...S.psv.filter((x) => x.page_id == d.page_id && x.direction == d.direction).map((x) => x.sort));
       const r = await db.from("page_services").insert({ page_id: d.page_id, direction: d.direction, sort: last + 1, service_id: id });
       if (r.error) throw r.error;
-      const idx = stops.map((s, i) => (d.ids.has(s.station_id) ? i : -1)).filter((i) => i >= 0);
-      if (!idx.length) warns.push(`${d.label}: ни одна остановка поезда не совпадает со строками таблицы этой страницы`);
-      else {
-        const miss = stops.slice(idx[0], idx.at(-1) + 1).filter((s) => !d.ids.has(s.station_id)).map((s) => stName(s.station_id));
-        if (miss.length) warns.push(`${d.label}: этих станций нет в строках страницы, они не будут показаны: ${miss.join(", ")}`);
+      const all = [];
+      for (const r of S.ps.filter((x) => x.page_id == d.page_id).sort((x, y) => x.seq - y.seq)) (all[r.direction] ||= []).push(r.station_id);
+      const route = stops.map((x) => x.station_id);
+      if (!route.some((x) => all[d.direction].includes(x))) {
+        warns.push(`${d.label}: ни одна остановка поезда не совпадает со строками таблицы этой страницы`);
+        continue;
+      }
+      const added = mergeRows(all[d.direction], route);
+      if (added.length) {
+        const r2 = await db.rpc("save_page_stations", { p_page: d.page_id, p_dirs: all });
+        if (r2.error) throw r2.error;
+        const r3 = await db.from("page_stations").select("*"); if (r3.error) throw r3.error;
+        S.ps = r3.data;
+        infos.push(`${d.label}: в таблицу добавлены станции ${added.map(stName).join(", ")}`);
       }
     }
     for (const k of [...c.orig].filter((k) => !c.pages.has(k))) {
@@ -207,7 +229,7 @@ async function save(btn) {
       if (r.error) throw r.error;
     }
     await loadAll();
-    say(`Сохранено: ${c.number}` + (warns.length ? "\n⚠ " + warns.join("\n⚠ ") : ""), warns.length ? "warn" : "");
+    say(`Сохранено: ${c.number}` + infos.map((t) => "\n+ " + t).join("") + warns.map((t) => "\n⚠ " + t).join(""), warns.length ? "warn" : "");
     renderList();
   } catch (e) {
     btn.disabled = false;
@@ -254,7 +276,8 @@ function renderPageEdit() {
       <td class="nowrap"><button class="icon" data-act="pstup" data-d="${d}" data-i="${i}">↑</button>
       <button class="icon" data-act="pstdown" data-d="${d}" data-i="${i}">↓</button>
       <button class="icon danger" data-act="pstdel" data-d="${d}" data-i="${i}">✕</button></td></tr>`).join("")}</tbody></table></div>
-    <p style="margin:12px 0 0"><button data-act="pstadd" data-d="${d}">+ Строка (станция)</button></p></div>`;
+    <p style="margin:12px 0 0"><button data-act="pstadd" data-d="${d}">+ Строка (станция)</button>
+    ${pg.id ? `<button data-act="pstfill" data-d="${d}">Добавить станции из поездов</button>` : ""}</p></div>`;
   }).join("");
   app.innerHTML = `<header class="hdr"><button data-act="tab-pages">← К списку страниц</button>
     <h1>${pg.id ? esc(pg.title) : "Новая страница"}</h1></header><main class="wrap">${stOptions()}
@@ -268,6 +291,20 @@ function renderPageEdit() {
     <div class="actionbar"><div><button class="primary" data-act="savepage">Сохранить</button>
     ${pg.id ? '<button class="danger" data-act="removepage">Удалить страницу</button>' : ""}
     <span class="small" style="align-self:center">Ctrl+S — сохранить</span></div></div>`;
+}
+async function fillRows(d) {
+  const ids = S.psv.filter((x) => x.page_id == pg.id && x.direction == d).map((x) => x.service_id);
+  if (!ids.length) return say("На этом направлении пока нет поездов", "warn");
+  const r = await db.from("stops").select("service_id,seq,station_id").in("service_id", ids).order("seq");
+  if (r.error) return say(r.error.message, "err");
+  const by = {};
+  for (const x of r.data) (by[x.service_id] ||= []).push(x.station_id);
+  const rows = pg.dirs[d], added = [];
+  for (const sid of ids) added.push(...mergeRows(rows, by[sid] || []));
+  if (added.length) dirty = true;
+  say(added.length ? `Добавлено станций: ${added.length} (${added.map(stName).join(", ")}).\nНажми «Сохранить»` : "Все станции поездов уже есть в таблице",
+    added.length ? "" : "warn");
+  renderPageEdit();
 }
 function pfail(t) { say(t, "err"); renderPageEdit(); }
 async function savePage(btn) {
@@ -324,6 +361,7 @@ app.addEventListener("click", async (e) => {
   if (a == "newpage") return openPage(null);
   if (a == "pup") return movePage(i, -1);
   if (a == "pdown") return movePage(i, 1);
+  if (a == "pstfill") return fillRows(d);
   if (a == "pstadd") { dirty = true; pg.dirs[d].push(""); return renderPageEdit(); }
   if (a == "pstdel") { dirty = true; pg.dirs[d].splice(i, 1); return renderPageEdit(); }
   if (a == "pstup" && i > 0) { dirty = true; const r = pg.dirs[d]; [r[i - 1], r[i]] = [r[i], r[i - 1]]; return renderPageEdit(); }
