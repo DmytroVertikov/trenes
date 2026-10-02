@@ -66,7 +66,7 @@ ${tables}
 
 (async () => {
   const app = document.getElementById("app");
-  const slug = document.body.dataset.page;
+  const slug = new URLSearchParams(location.search).get("p") || document.body.dataset.page;
   try {
     if (slug === "lista-trenes") {
       app.innerHTML = renderList(await api("train_list?select=number,freq,origin,destination"));
