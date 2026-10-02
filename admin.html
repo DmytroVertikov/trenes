@@ -346,12 +346,36 @@ app.addEventListener("click", async (e) => {
     await loadAll(); say("Поезд удалён"); renderList();
   }
 });
+app.addEventListener("focusin", (e) => {
+  const t = e.target;
+  if (t.dataset.part && t.value) t.select();
+});
 app.addEventListener("input", async (e) => {
   const t = e.target;
   if (t.dataset.pf) { pg[t.dataset.pf] = t.value; return; }
   if (t.id == "flt") { filter = t.value; $("#rows").innerHTML = rowsHtml(); }
   else if (t.dataset.f) cur[t.dataset.f] = t.value;
-  else if (t.dataset.k && t.dataset.k != "station_id") cur.stops[t.dataset.i][t.dataset.k] = t.value;
+  else if (t.dataset.k && t.dataset.k != "station_id" && t.dataset.part) {
+    t.value = t.value.replace(/\D/g, "").slice(0, 2);
+    const row = t.closest("tr");
+    const hEl = row.querySelector(`input[data-k="${t.dataset.k}"][data-part="h"]`);
+    const mEl = row.querySelector(`input[data-k="${t.dataset.k}"][data-part="m"]`);
+    if (hEl.value === "" && mEl.value === "") {
+      cur.stops[t.dataset.i][t.dataset.k] = "";
+    } else if (hEl.value !== "" && mEl.value !== "") {
+      cur.stops[t.dataset.i][t.dataset.k] =
+        hEl.value.padStart(2, "0") + ":" + mEl.value.padStart(2, "0");
+    } else {
+      cur.stops[t.dataset.i][t.dataset.k] = hEl.value + ":" + mEl.value;
+    }
+    if (t.dataset.part === "h" && t.value.length === 2) {
+      mEl.focus();
+      mEl.select();
+    }
+  }
+  else if (t.dataset.k && t.dataset.k != "station_id") {
+    cur.stops[t.dataset.i][t.dataset.k] = t.value;
+  }
 });
 app.addEventListener("change", async (e) => {
   const t = e.target;
