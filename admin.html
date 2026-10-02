@@ -46,25 +46,6 @@
   #toast.err{background:#b3261e} #toast.warn{background:#9a6700}
   .login{max-width:340px;margin:12vh auto;display:grid;gap:12px}
   .login label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
-  .timepair{display:flex;align-items:center;gap:4px}
-  .timepair input{
-  width:2.8em;
-  text-align:center;
-  padding:8px 4px;
-  font-size:1.35rem;
-  font-weight:700;
-  letter-spacing:0.02em;
-  }
-  .timepair span{
-  color:var(--muted);
-  font-weight:700;
-  font-size:1.25rem;
-  }
-  .stops select{
-  font-size:1.35rem;
-  font-weight:700;
-  padding:8px 10px;
-  }
   @media(max-width:600px){.wrap{padding:10px}.stops input.st{min-width:170px}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -84,8 +65,16 @@ const cityOf = (n) => n.split(/[-/]/)[0].trim();
 let S = { stations: [], list: [], pages: [], ps: [], psv: [] };
 let cur = null, msg = null, filter = "";
 const stName = (id) => (S.stations.find((s) => s.id == id) || {}).name || "?";
-const banner = () => { const m = msg; msg = null; return m ? `<div class="msg ${m.kind || ""}">${esc(m.text)}</div>` : ""; };
-const say = (text, kind) => { msg = { text, kind }; };
+const banner = () => "";
+let dirty = false;
+function say(text, kind = "") {
+  let t = $("#toast");
+  if (!t) { t = document.createElement("div"); t.id = "toast"; t.onclick = () => t.remove(); document.body.appendChild(t); }
+  t.className = kind; t.textContent = text; clearTimeout(t._h);
+  if (kind != "err") t._h = setTimeout(() => t.remove(), kind == "warn" ? 14000 : 4000);
+}
+const stOptions = () => `<datalist id="stlist">${S.stations.map((s) => `<option value="${esc(s.name)}">`).join("")}</datalist>`;
+const findStation = (v) => S.stations.find((s) => s.name.toLowerCase() == v.trim().toLowerCase());
 
 function pageDirs() {
   const m = new Map();
@@ -111,9 +100,10 @@ async function loadAll() {
 
 /* ---------- вход ---------- */
 function renderLogin() {
-  app.innerHTML = `<h1>Админка расписаний</h1>${banner()}<div class="card">
-    <label>Email<br><input id="em" type="email" style="width:100%"></label>
-    <label>Пароль<br><input id="pw" type="password" style="width:100%"></label>
+  dirty = false;
+  app.innerHTML = `<div class="card login"><h1 style="color:var(--red)">🚆 Админка расписаний</h1>
+    <label>Email<input id="em" type="email" autocomplete="username"></label>
+    <label>Пароль<input id="pw" type="password" autocomplete="current-password"></label>
     <button class="primary" data-act="login">Войти</button></div>`;
 }
 
@@ -121,18 +111,22 @@ function renderLogin() {
 function rowsHtml() {
   const f = filter.toLowerCase();
   return S.list.filter((t) => !f || `${t.number} ${t.freq} ${t.origin} ${t.destination}`.toLowerCase().includes(f))
-    .map((t) => `<tr class="row" data-act="edit" data-id="${t.id}"><td><b>${esc(t.number)}</b></td>
-      <td>${esc(t.origin)} → ${esc(t.destination)}</td><td>${esc(t.freq)}</td></tr>`).join("");
+    .map((t) => `<tr class="row" data-act="edit" data-id="${t.id}"><td class="nowrap"><b>${esc(t.number)}</b></td>
+      <td>${esc(t.origin)} → ${esc(t.destination)}</td><td class="nowrap">${esc(t.freq)}</td></tr>`).join("")
+    || `<tr><td colspan="3" class="small">Ничего не найдено</td></tr>`;
 }
 function renderList() {
-  app.innerHTML = `${tabs("trains")}${banner()}
-    <div class="bar"><input id="flt" class="grow" placeholder="Поиск: номер, город, периодичность" value="${esc(filter)}">
+  dirty = false;
+  app.innerHTML = `${tabs("trains")}<main class="wrap">
+    <div class="bar"><input id="flt" class="grow" placeholder="Поиск: номер, город, периодичность (${S.list.length} поездов)" value="${esc(filter)}">
     <button class="primary" data-act="new">+ Новый поезд</button></div>
-    <table><thead><tr><th>Поезд</th><th>Маршрут</th><th>Периодичность</th></tr></thead><tbody id="rows">${rowsHtml()}</tbody></table>`;
+    <div class="card flush scroll"><table><thead><tr><th>Поезд</th><th>Маршрут</th><th>Периодичность</th></tr></thead>
+    <tbody id="rows">${rowsHtml()}</tbody></table></div></main>`;
 }
 
 /* ---------- редактирование ---------- */
 async function openTrain(id) {
+  dirty = false;
   if (!id) {
     cur = { id: null, number: "", freq: "diario", type: "alvia", pages: new Set(), orig: new Set(),
       stops: [{ station_id: "", arrival: "", departure: "" }, { station_id: "", arrival: "", departure: "" }] };
@@ -146,45 +140,32 @@ async function openTrain(id) {
   }
   renderEdit();
 }
-function stationSelect(i, val) {
-  return `<select data-i="${i}" data-k="station_id"><option value="">— станция —</option>
-    ${S.stations.map((s) => `<option value="${s.id}" ${s.id == val ? "selected" : ""}>${esc(s.name)}</option>`).join("")}
-    <option value="__new">➕ новая станция…</option></select>`;
-}
-function splitTime(t) {
-  const m = (t || "").match(/^(\d{1,2}):(\d{2})$/);
-  return m ? [m[1].padStart(2, "0"), m[2]] : ["", ""];
-}
-function timePair(i, key, val) {
-  const [h, m] = splitTime(val);
-  return `<span class="timepair">
-    <input type="text" inputmode="numeric" maxlength="2" data-i="${i}" data-k="${key}" data-part="h"
-      value="${h}" placeholder="чч" pattern="[0-2]?\\d">
-    <span>:</span>
-    <input type="text" inputmode="numeric" maxlength="2" data-i="${i}" data-k="${key}" data-part="m"
-      value="${m}" placeholder="мм" pattern="[0-5]?\\d">
-  </span>`;
-}
 function renderEdit() {
-const stops = cur.stops.map((s, i) => `<tr><td class="small">${i + 1}</td><td>${stationSelect(i, s.station_id)}</td>
-    <td>${timePair(i, "arrival", s.arrival)}</td>
-    <td>${timePair(i, "departure", s.departure)}</td>
-    <td><button data-act="up" data-i="${i}">↑</button> <button data-act="down" data-i="${i}">↓</button>
-    <button data-act="del" data-i="${i}">✕</button></td></tr>`).join("");
-const pages = pageDirs().map((d) => `<label><input type="checkbox" data-p="${d.key}" ${cur.pages.has(d.key) ? "checked" : ""}> ${esc(d.label)}</label>`).join("");
-  app.innerHTML = `<div class="bar"><button data-act="back">← К списку</button>
-    <h1 class="grow">${cur.id ? esc(cur.number) : "Новый поезд"}</h1></div>${banner()}
-    <div class="bar"><label>Номер<br><input data-f="number" value="${esc(cur.number)}" placeholder="A 4181"></label>
-    <label>Периодичность<br><input data-f="freq" list="freqs" value="${esc(cur.freq)}"></label>
-    <datalist id="freqs">${FREQ.map((f) => `<option value="${f}">`).join("")}</datalist>
-    <label>Тип<br><select data-f="type">${TYPES.map((t) => `<option ${t == cur.type ? "selected" : ""}>${t}</option>`).join("")}</select></label></div>
-    <h2>Остановки (по порядку маршрута)</h2>
-    <p class="small">На первой станции достаточно указать время отправления, на последней — прибытия; если время одно, второе заполнится само.</p>
-    <table class="stops"><thead><tr><th>#</th><th>Станция</th><th>Прибытие</th><th>Отправление</th><th></th></tr></thead><tbody>${stops}</tbody></table>
-    <p><button data-act="add">+ Остановка</button></p>
-    <h2>Показывать на страницах</h2><div class="pages">${pages}</div>
-    <div class="bar" style="margin-top:20px"><button class="primary" data-act="save">Сохранить</button>
-    ${cur.id ? '<button class="danger" data-act="remove">Удалить поезд</button>' : ""}</div>`;
+  const stops = cur.stops.map((s, i) => `<tr><td class="small">${i + 1}</td>
+    <td><input class="st ${s.station_id ? "" : "bad"}" list="stlist" data-i="${i}" data-k="stname" placeholder="Начни вводить станцию…" value="${esc(s.station_id ? stName(s.station_id) : "")}"></td>
+    <td><input type="time" data-i="${i}" data-k="arrival" value="${s.arrival}"></td>
+    <td><input type="time" data-i="${i}" data-k="departure" value="${s.departure}"></td>
+    <td class="nowrap"><button class="icon" data-act="up" data-i="${i}" title="Выше">↑</button>
+    <button class="icon" data-act="down" data-i="${i}" title="Ниже">↓</button>
+    <button class="icon danger" data-act="del" data-i="${i}" title="Убрать">✕</button></td></tr>`).join("");
+  const pages = pageDirs().map((d) => `<label><input type="checkbox" data-p="${d.key}" ${cur.pages.has(d.key) ? "checked" : ""}> ${esc(d.label)}</label>`).join("");
+  app.innerHTML = `<header class="hdr"><button data-act="back">← К списку</button>
+    <h1>${cur.id ? esc(cur.number) + " · " + esc(cur.freq) : "Новый поезд"}</h1></header>
+    <main class="wrap">${stOptions()}
+    <div class="card"><div class="fields">
+      <label>Номер<input data-f="number" value="${esc(cur.number)}" placeholder="A 4181"></label>
+      <label>Периодичность<input data-f="freq" list="freqs" value="${esc(cur.freq)}"></label>
+      <label>Тип<select data-f="type">${TYPES.map((t) => `<option ${t == cur.type ? "selected" : ""}>${t}</option>`).join("")}</select></label>
+    </div><datalist id="freqs">${FREQ.map((f) => `<option value="${f}">`).join("")}</datalist></div>
+    <div class="card"><h2>Остановки по порядку маршрута</h2>
+      <p class="small" style="margin:0 0 10px">На первой станции достаточно времени отправления, на последней — прибытия; если время одно, второе заполнится само.
+      Нет нужной станции — просто введи новое название, админка предложит её создать.</p>
+      <div class="scroll"><table class="stops"><thead><tr><th>#</th><th>Станция</th><th>Прибытие</th><th>Отправление</th><th></th></tr></thead><tbody>${stops}</tbody></table></div>
+      <p style="margin:12px 0 0"><button data-act="add">+ Остановка</button></p></div>
+    <div class="card"><h2>Показывать на страницах</h2><div class="pages">${pages}</div></div></main>
+    <div class="actionbar"><div><button class="primary" data-act="save">Сохранить</button>
+    ${cur.id ? '<button data-act="copy">Копировать как новый</button><button class="danger" data-act="remove">Удалить</button>' : ""}
+    <span class="small" style="align-self:center">Ctrl+S — сохранить</span></div></div>`;
 }
 
 async function save(btn) {
@@ -237,19 +218,22 @@ function fail(text) { say(text, "err"); renderEdit(); }
 
 
 /* ---------- страницы ---------- */
-const tabs = (a) => `<div class="bar"><button class="${a == "trains" ? "primary" : ""}" data-act="tab-trains">Поезда</button>
-  <button class="${a == "pages" ? "primary" : ""}" data-act="tab-pages">Страницы</button><span class="grow"></span>
-  <button data-act="logout">Выйти</button></div>`;
+const tabs = (a) => `<header class="hdr"><b>🚆 Расписания</b>
+  <button class="${a == "trains" ? "on" : ""}" data-act="tab-trains">Поезда</button>
+  <button class="${a == "pages" ? "on" : ""}" data-act="tab-pages">Страницы</button><span class="grow"></span>
+  <button data-act="logout">Выйти</button></header>`;
 let pg = null;
 function renderPages() {
+  dirty = false;
   const rows = S.pages.map((p, i) => `<tr class="row" data-act="editpage" data-id="${p.id}"><td>${i + 1}</td>
     <td><b>${esc(p.title)}</b></td><td class="small">${esc(p.slug)}</td>
-    <td><button data-act="pup" data-i="${i}">↑</button> <button data-act="pdown" data-i="${i}">↓</button></td></tr>`).join("");
-  app.innerHTML = `${tabs("pages")}${banner()}<div class="bar"><h1 class="grow">Страницы (${S.pages.length})</h1>
+    <td class="nowrap"><button class="icon" data-act="pup" data-i="${i}">↑</button> <button class="icon" data-act="pdown" data-i="${i}">↓</button></td></tr>`).join("");
+  app.innerHTML = `${tabs("pages")}<main class="wrap"><div class="bar"><h1 class="grow">Страницы (${S.pages.length})</h1>
     <button class="primary" data-act="newpage">+ Новая страница</button></div>
-    <table><thead><tr><th>#</th><th>Название</th><th>Адрес</th><th>Порядок</th></tr></thead><tbody>${rows}</tbody></table>`;
+    <div class="card flush scroll"><table><thead><tr><th>#</th><th>Название</th><th>Адрес</th><th>Порядок на главной</th></tr></thead><tbody>${rows}</tbody></table></div></main>`;
 }
 function openPage(id) {
+  dirty = false;
   if (!id) pg = { id: null, slug: "", title: "", dirs: [["", ""], ["", ""]] };
   else {
     const p = S.pages.find((x) => x.id == id), dirs = [];
@@ -258,32 +242,32 @@ function openPage(id) {
   }
   renderPageEdit();
 }
-function pstSelect(d, i, val) {
-  return `<select data-ps="${d}:${i}"><option value="">— станция —</option>${S.stations.map((s) =>
-    `<option value="${s.id}" ${s.id == val ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select>`;
-}
 function renderPageEdit() {
   const url = pg.slug ? (pg.id ? `${pg.slug}.html (или page.html?p=${pg.slug})` : `page.html?p=${pg.slug}`) : "";
   const dirs = pg.dirs.map((st, d) => {
     const trains = S.psv.filter((x) => pg.id && x.page_id == pg.id && x.direction == d).sort((a, b) => a.sort - b.sort)
       .map((x) => (S.list.find((t) => t.id == x.service_id) || {}).number).join(", ");
-    return `<h2>Направление ${d + 1}: ${st[0] ? esc(cityOf(stName(st[0]))) : "?"} → ${st.at(-1) ? esc(cityOf(stName(st.at(-1)))) : "?"}</h2>
-    <p class="small">Поезда: ${esc(trains) || "пока нет (добавляются на вкладке «Поезда»)"}</p>
-    <table class="stops"><tbody>${st.map((v, i) => `<tr><td class="small">${i + 1}</td><td>${pstSelect(d, i, v)}</td>
-      <td><button data-act="pstup" data-d="${d}" data-i="${i}">↑</button> <button data-act="pstdown" data-d="${d}" data-i="${i}">↓</button>
-      <button data-act="pstdel" data-d="${d}" data-i="${i}">✕</button></td></tr>`).join("")}</tbody></table>
-    <p><button data-act="pstadd" data-d="${d}">+ Строка (станция)</button></p>`;
+    return `<div class="card"><h2>Направление ${d + 1}: ${st[0] ? esc(cityOf(stName(st[0]))) : "?"} → ${st.at(-1) ? esc(cityOf(stName(st.at(-1)))) : "?"}</h2>
+    <p class="small" style="margin:0 0 10px">Поезда: ${esc(trains) || "пока нет (добавляются на вкладке «Поезда»)"}</p>
+    <div class="scroll"><table class="stops"><tbody>${st.map((v, i) => `<tr><td class="small">${i + 1}</td>
+      <td><input class="st ${v ? "" : "bad"}" list="stlist" data-ps="${d}:${i}" placeholder="Начни вводить станцию…" value="${esc(v ? stName(v) : "")}"></td>
+      <td class="nowrap"><button class="icon" data-act="pstup" data-d="${d}" data-i="${i}">↑</button>
+      <button class="icon" data-act="pstdown" data-d="${d}" data-i="${i}">↓</button>
+      <button class="icon danger" data-act="pstdel" data-d="${d}" data-i="${i}">✕</button></td></tr>`).join("")}</tbody></table></div>
+    <p style="margin:12px 0 0"><button data-act="pstadd" data-d="${d}">+ Строка (станция)</button></p></div>`;
   }).join("");
-  app.innerHTML = `<div class="bar"><button data-act="tab-pages">← К списку страниц</button>
-    <h1 class="grow">${pg.id ? esc(pg.title) : "Новая страница"}</h1></div>${banner()}
-    <div class="bar"><label>Название<br><input data-pf="title" value="${esc(pg.title)}" placeholder="Madrid ↔ Oviedo"></label>
-    <label>Адрес (латиница, без пробелов)<br><input data-pf="slug" value="${esc(pg.slug)}" ${pg.id ? "disabled" : ""} placeholder="madrid-oviedo"></label></div>
-    ${url ? `<p class="small">Адрес страницы: ${esc(url)}</p>` : ""}
-    <p class="small">Строки — это станции, которые показываются в таблице. Поезд показывает время только на тех станциях, которые есть и в его маршруте, и здесь.</p>
+  app.innerHTML = `<header class="hdr"><button data-act="tab-pages">← К списку страниц</button>
+    <h1>${pg.id ? esc(pg.title) : "Новая страница"}</h1></header><main class="wrap">${stOptions()}
+    <div class="card"><div class="fields">
+      <label>Название<input data-pf="title" value="${esc(pg.title)}" placeholder="Madrid ↔ Oviedo"></label>
+      <label>Адрес (латиница, без пробелов)<input data-pf="slug" value="${esc(pg.slug)}" ${pg.id ? "disabled" : ""} placeholder="madrid-oviedo"></label>
+    </div>${url ? `<p class="small" style="margin:10px 0 0">Адрес страницы: ${esc(url)}</p>` : ""}</div>
+    <p class="small">Строки — станции, которые показываются в таблице. Поезд показывает время только на станциях, которые есть и в его маршруте, и здесь.</p>
     ${dirs}
-    <p><button data-act="dadd">+ Направление</button> ${pg.dirs.length > 1 ? '<button data-act="ddel">Удалить последнее направление</button>' : ""}</p>
-    <div class="bar" style="margin-top:20px"><button class="primary" data-act="savepage">Сохранить</button>
-    ${pg.id ? '<button class="danger" data-act="removepage">Удалить страницу</button>' : ""}</div>`;
+    <p><button data-act="dadd">+ Направление</button> ${pg.dirs.length > 1 ? '<button data-act="ddel">Удалить последнее направление</button>' : ""}</p></main>
+    <div class="actionbar"><div><button class="primary" data-act="savepage">Сохранить</button>
+    ${pg.id ? '<button class="danger" data-act="removepage">Удалить страницу</button>' : ""}
+    <span class="small" style="align-self:center">Ctrl+S — сохранить</span></div></div>`;
 }
 function pfail(t) { say(t, "err"); renderPageEdit(); }
 async function savePage(btn) {
@@ -323,6 +307,10 @@ async function movePage(i, delta) {
 app.addEventListener("click", async (e) => {
   const b = e.target.closest("[data-act]"); if (!b) return;
   const a = b.dataset.act, i = +b.dataset.i;
+  if (["back", "tab-trains", "tab-pages", "logout"].includes(a)) {
+    if (dirty && !confirm("Есть несохранённые изменения. Выйти без сохранения?")) return;
+    dirty = false;
+  }
   if (a == "login") {
     const { error } = await db.auth.signInWithPassword({ email: $("#em").value, password: $("#pw").value });
     if (error) { say("Не удалось войти: " + error.message, "err"); return renderLogin(); }
@@ -336,12 +324,12 @@ app.addEventListener("click", async (e) => {
   if (a == "newpage") return openPage(null);
   if (a == "pup") return movePage(i, -1);
   if (a == "pdown") return movePage(i, 1);
-  if (a == "pstadd") { pg.dirs[d].push(""); return renderPageEdit(); }
-  if (a == "pstdel") { pg.dirs[d].splice(i, 1); return renderPageEdit(); }
-  if (a == "pstup" && i > 0) { const r = pg.dirs[d]; [r[i - 1], r[i]] = [r[i], r[i - 1]]; return renderPageEdit(); }
-  if (a == "pstdown" && i < pg.dirs[d].length - 1) { const r = pg.dirs[d]; [r[i + 1], r[i]] = [r[i], r[i + 1]]; return renderPageEdit(); }
-  if (a == "dadd") { pg.dirs.push(["", ""]); return renderPageEdit(); }
-  if (a == "ddel") { if (confirm("Удалить последнее направление? Поезда этого направления тоже будут убраны со страницы.")) pg.dirs.pop(); return renderPageEdit(); }
+  if (a == "pstadd") { dirty = true; pg.dirs[d].push(""); return renderPageEdit(); }
+  if (a == "pstdel") { dirty = true; pg.dirs[d].splice(i, 1); return renderPageEdit(); }
+  if (a == "pstup" && i > 0) { dirty = true; const r = pg.dirs[d]; [r[i - 1], r[i]] = [r[i], r[i - 1]]; return renderPageEdit(); }
+  if (a == "pstdown" && i < pg.dirs[d].length - 1) { dirty = true; const r = pg.dirs[d]; [r[i + 1], r[i]] = [r[i], r[i + 1]]; return renderPageEdit(); }
+  if (a == "dadd") { dirty = true; pg.dirs.push(["", ""]); return renderPageEdit(); }
+  if (a == "ddel") { dirty = true; if (confirm("Удалить последнее направление? Поезда этого направления тоже будут убраны со страницы.")) pg.dirs.pop(); return renderPageEdit(); }
   if (a == "savepage") return savePage(b);
   if (a == "removepage" && confirm(`Удалить страницу «${pg.title}»? Сами поезда останутся.`)) {
     const r = await db.from("pages").delete().eq("id", pg.id);
@@ -351,10 +339,17 @@ app.addEventListener("click", async (e) => {
   if (a == "edit") return openTrain(+b.dataset.id);
   if (a == "new") return openTrain(null);
   if (a == "back") return renderList();
-  if (a == "add") { cur.stops.push({ station_id: "", arrival: "", departure: "" }); return renderEdit(); }
-  if (a == "del") { cur.stops.splice(i, 1); return renderEdit(); }
-  if (a == "up" && i > 0) { [cur.stops[i - 1], cur.stops[i]] = [cur.stops[i], cur.stops[i - 1]]; return renderEdit(); }
-  if (a == "down" && i < cur.stops.length - 1) { [cur.stops[i + 1], cur.stops[i]] = [cur.stops[i], cur.stops[i + 1]]; return renderEdit(); }
+  if (a == "add") {
+    cur.stops.push({ station_id: "", arrival: "", departure: "" }); dirty = true; renderEdit();
+    return [...document.querySelectorAll('[data-k="stname"]')].at(-1).focus();
+  }
+  if (a == "copy") {
+    cur = { ...cur, id: null, number: "", pages: new Set(cur.pages), orig: new Set(), stops: cur.stops.map((x) => ({ ...x })) };
+    dirty = true; say("Копия создана: укажи новый номер и сохрани"); return renderEdit();
+  }
+  if (a == "del") { cur.stops.splice(i, 1); dirty = true; return renderEdit(); }
+  if (a == "up" && i > 0) { dirty = true; [cur.stops[i - 1], cur.stops[i]] = [cur.stops[i], cur.stops[i - 1]]; return renderEdit(); }
+  if (a == "down" && i < cur.stops.length - 1) { dirty = true; [cur.stops[i + 1], cur.stops[i]] = [cur.stops[i], cur.stops[i + 1]]; return renderEdit(); }
   if (a == "save") return save(b);
   if (a == "remove" && confirm(`Удалить поезд ${cur.number} (${cur.freq}) и все его остановки?`)) {
     const r = await db.from("services").delete().eq("id", cur.id);
@@ -362,52 +357,44 @@ app.addEventListener("click", async (e) => {
     await loadAll(); say("Поезд удалён"); renderList();
   }
 });
-app.addEventListener("focusin", (e) => {
-  const t = e.target;
-  if (t.dataset.part && t.value) t.select();
-});
 app.addEventListener("input", async (e) => {
   const t = e.target;
+  if (cur && (t.dataset.f || t.dataset.k || t.dataset.pf)) dirty = true;
   if (t.dataset.pf) { pg[t.dataset.pf] = t.value; return; }
   if (t.id == "flt") { filter = t.value; $("#rows").innerHTML = rowsHtml(); }
   else if (t.dataset.f) cur[t.dataset.f] = t.value;
-  else if (t.dataset.k && t.dataset.k != "station_id" && t.dataset.part) {
-    t.value = t.value.replace(/\D/g, "").slice(0, 2);
-    const row = t.closest("tr");
-    const hEl = row.querySelector(`input[data-k="${t.dataset.k}"][data-part="h"]`);
-    const mEl = row.querySelector(`input[data-k="${t.dataset.k}"][data-part="m"]`);
-    if (hEl.value === "" && mEl.value === "") {
-      cur.stops[t.dataset.i][t.dataset.k] = "";
-    } else if (hEl.value !== "" && mEl.value !== "") {
-      cur.stops[t.dataset.i][t.dataset.k] =
-        hEl.value.padStart(2, "0") + ":" + mEl.value.padStart(2, "0");
-    } else {
-      cur.stops[t.dataset.i][t.dataset.k] = hEl.value + ":" + mEl.value;
-    }
-    if (t.dataset.part === "h" && t.value.length === 2) {
-      mEl.focus();
-      mEl.select();
-    }
-  }
-  else if (t.dataset.k && t.dataset.k != "station_id") {
-    cur.stops[t.dataset.i][t.dataset.k] = t.value;
-  }
+  else if (t.dataset.k == "arrival" || t.dataset.k == "departure") cur.stops[t.dataset.i][t.dataset.k] = t.value;
 });
 app.addEventListener("change", async (e) => {
   const t = e.target;
-  if (t.dataset.ps) { const [d, i] = t.dataset.ps.split(":"); pg.dirs[d][i] = t.value; return renderPageEdit(); }
-  if (t.dataset.p) { t.checked ? cur.pages.add(t.dataset.p) : cur.pages.delete(t.dataset.p); }
-  else if (t.dataset.k == "station_id") {
-    if (t.value == "__new") {
-      const name = (prompt("Название новой станции (как на сайте):") || "").trim();
-      if (!name) { t.value = cur.stops[t.dataset.i].station_id; return; }
-      const city = (prompt("Город для подписей «desde …»:", cityOf(name)) || cityOf(name)).trim();
-      const r = await db.from("stations").insert({ name, city }).select().single();
-      if (r.error) { alert(r.error.message); return renderEdit(); }
-      S.stations.push(r.data); S.stations.sort((a, b) => a.name.localeCompare(b.name));
-      cur.stops[t.dataset.i].station_id = r.data.id; renderEdit();
-    } else cur.stops[t.dataset.i].station_id = t.value;
+  if (t.dataset.p || t.dataset.ps || t.dataset.k) dirty = true;
+  if (t.dataset.ps) {
+    const [d, i] = t.dataset.ps.split(":"), st = findStation(t.value);
+    if (!st && t.value.trim()) say("Такой станции нет. Создай её в редакторе поезда (введи название новой станции)", "err");
+    pg.dirs[d][i] = st ? st.id : ""; return renderPageEdit();
   }
+  if (t.dataset.p) { t.checked ? cur.pages.add(t.dataset.p) : cur.pages.delete(t.dataset.p); }
+  else if (t.dataset.k == "stname") {
+    const i = t.dataset.i, v = t.value.trim(), st = findStation(v);
+    if (st) cur.stops[i].station_id = st.id;
+    else if (!v) cur.stops[i].station_id = "";
+    else if (confirm(`Станции «${v}» нет в базе. Создать новую?`)) {
+      const city = (prompt("Город для подписей «desde …»:", cityOf(v)) || cityOf(v)).trim();
+      const r = await db.from("stations").insert({ name: v, city }).select().single();
+      if (r.error) { say(r.error.message, "err"); cur.stops[i].station_id = ""; }
+      else { S.stations.push(r.data); S.stations.sort((x, y) => x.name.localeCompare(y.name)); cur.stops[i].station_id = r.data.id; say(`Станция «${v}» создана`); }
+    } else cur.stops[i].station_id = "";
+    return renderEdit();
+  }
+});
+
+window.addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+document.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() == "s") {
+    const b = document.querySelector('[data-act="save"],[data-act="savepage"]');
+    if (b) { e.preventDefault(); document.activeElement.blur(); b.click(); }
+  }
+  if (e.key == "Enter" && e.target.id == "pw") document.querySelector('[data-act="login"]').click();
 });
 
 async function start() {
