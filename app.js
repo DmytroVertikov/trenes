@@ -64,19 +64,14 @@ ${tables}
 <footer>${esc(p.title)} · Datos de ejemplo</footer>`);
 }
 
-(async () => {
-  const app = document.getElementById("app");
-  const slug = new URLSearchParams(location.search).get("p") || document.body.dataset.page;
-  try {
-    if (slug === "lista-trenes") {
-      app.innerHTML = renderList(await api("train_list?select=number,freq,origin,destination"));
-    } else {
-      const p = await api("rpc/get_page", { p_slug: slug });
-      if (!p) throw new Error(`Página «${slug}» no encontrada`);
-      document.title = `${p.title} — Horarios`;
-      app.innerHTML = renderPage(p);
-    }
-  } catch (e) {
-    app.textContent = "No se pudieron cargar los horarios. " + e.message;
-  }
-})();
+
+/* ---------- главная: список маршрутов из таблицы pages ---------- */
+const OPERATORS = [["ave", "AVE"], ["alvia", "Alvia"], ["avlo", "Avlo"], ["iryo", "iryo"], ["ouigo", "OUIGO"], ["ic", "IC"], ["regional", "Regional"]];
+const norm = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+function renderRoutes(pages) {
+  return pages.map((p) => {
+    const types = new Set(p.page_services.map((x) => x.services && x.services.type));
+    const [from, to] = p.title.split("↔").map(norm);
+    const logos = OPERATORS.filter(([t]) => types.has(t)).map(([t, alt]) =>
+      `<img src="images/${t}.sv
