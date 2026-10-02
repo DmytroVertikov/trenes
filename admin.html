@@ -46,9 +46,20 @@
   #toast.err{background:#b3261e} #toast.warn{background:#9a6700}
   .login{max-width:340px;margin:12vh auto;display:grid;gap:12px}
   .login label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
-  .timepair{display:flex;align-items:center;gap:2px}
-  .timepair input{width:2.6em;text-align:center;padding:6px 4px}
-  .timepair span{color:var(--muted);font-weight:600}
+  .timepair{display:flex;align-items:center;gap:4px}
+  .timepair input{
+  width:2.8em;
+  text-align:center;
+  padding:8px 4px;
+  font-size:1.35rem;
+  font-weight:700;
+  letter-spacing:0.02em;
+  }
+  .timepair span{
+  color:var(--muted);
+  font-weight:700;
+  font-size:1.25rem;
+  }
   @media(max-width:600px){.wrap{padding:10px}.stops input.st{min-width:170px}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
