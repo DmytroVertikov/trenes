@@ -29,7 +29,7 @@ function renderList(rows) {
 <table class="trains-table">
 <thead><tr><th>Tren</th><th>Ruta completa</th><th>Periodicidad</th></tr></thead>
 <tbody>${rows.map((r) => `
-<tr><td class="train-num-cell">${esc(r.number)}</td>
+<tr><td class="train-num-cell"><a href="${trainHref(r.number)}" style="color:inherit">${esc(r.number)}</a></td>
 <td class="route-cell">${esc(r.origin)} → ${esc(r.destination)}</td>
 <td class="freq-cell">${esc(r.freq)}</td></tr>`).join("")}
 </tbody></table></div>
@@ -46,7 +46,7 @@ function renderPage(p) {
     const head = d.services.map((s) => {
       const from = ids.has(s.origin.id) ? "" : ` desde ${esc(s.origin.city)}`;
       const to = ids.has(s.destination.id) ? "" : ` → ${esc(s.destination.city)}`;
-      return `<th><img src="images/${s.type}.svg" alt="" height="18"> ${esc(s.number)}${from}${to}</th>`;
+      return `<th><img src="images/${s.type}.svg" alt="" height="18"> <a href="${trainHref(s.number)}" style="color:inherit;text-decoration:underline dotted">${esc(s.number)}</a>${from}${to}</th>`;
     }).join("");
     const freq = d.services.map((s) => `<td>${esc(s.freq)}</td>`).join("");
     const body = d.stations.map((st) =>
@@ -64,6 +64,26 @@ ${tables}
 <footer>${esc(p.title)} · Datos de ejemplo</footer>`);
 }
 
+
+
+/* ---------- страница одного поезда ---------- */
+const trainHref = (n) => `train.html?n=${encodeURIComponent(n)}`;
+function renderTrain(rows, n) {
+  const body = rows.map((sv) => {
+    const st = sv.stops, last = st.length - 1;
+    const trs = st.map((s, i) => `<tr><td class="route-cell">${esc(s.stations.name)}</td>
+      <td>${i == 0 ? "—" : esc(hhmm(s.arrival))}</td><td>${i == last ? "—" : esc(hhmm(s.departure))}</td></tr>`).join("");
+    return `<h2><img src="images/${sv.type}.svg" alt="" height="22"> ${esc(st[0].stations.name)} → ${esc(st[last].stations.name)}</h2>
+<p class="subtitle">${esc(sv.freq)}</p>
+<div class="table-wrapper"><table class="trains-table">
+<thead><tr><th>Estación</th><th>Llegada</th><th>Salida</th></tr></thead><tbody>${trs}</tbody></table></div>`;
+  }).join("");
+  return `<div class="top-bar"><a href="lista-trenes.html" class="back">← Lista de trenes</a></div>
+<h1>${esc(n)}</h1>
+${body}
+<footer>${esc(n)} · Datos de ejemplo</footer>`;
+}
+const hhmm = (t) => (t ? t.slice(0, 5) : "");
 
 /* ---------- главная: список маршрутов из таблицы pages ---------- */
 const OPERATORS = [["ave", "AVE"], ["alvia", "Alvia"], ["avlo", "Avlo"], ["iryo", "iryo"], ["ouigo", "OUIGO"], ["ic", "IC"], ["regional", "Regional"]];
@@ -109,7 +129,14 @@ async function renderIndex() {
   if (!slug) return location.replace("index.html");
   if (slug === "index") return renderIndex();
   try {
-    if (slug === "lista-trenes") {
+    if (slug === "train") {
+      const n = new URLSearchParams(location.search).get("n");
+      if (!n) return location.replace("lista-trenes.html");
+      const rows = await api(`services?select=number,freq,type,stops(seq,arrival,departure,stations(name))&number=eq.${encodeURIComponent(n)}&stops.order=seq&order=freq`);
+      if (!rows.length) throw new Error(`Tren «${n}» no encontrado`);
+      document.title = `${n} — Horarios`;
+      app.innerHTML = renderTrain(rows, n);
+    } else if (slug === "lista-trenes") {
       app.innerHTML = renderList(await api("train_list?select=number,freq,origin,destination"));
     } else {
       const p = await api("rpc/get_page", { p_slug: slug });
