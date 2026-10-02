@@ -33,11 +33,16 @@
   td,th{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left}
   tr.row{cursor:pointer} tr.row:hover{background:#fff5f5}
   .tag{display:inline-block;padding:1px 8px;border-radius:99px;background:#eee;font-size:12px;color:#555}
-  .stops input.st{width:100%;min-width:240px} .stops input[type=time]{width:112px}
+  .stops input.st{width:100%;min-width:260px;font-size:1.15rem;padding:10px 12px}
+  .tm{display:inline-flex;align-items:center;gap:3px;font-size:1.35rem}
+  .tm input{width:54px;padding:10px 2px;text-align:center;font-size:1.35rem;font-variant-numeric:tabular-nums}
+  .tm b{font-weight:700;color:var(--muted)}
+  input.bad{border-color:var(--red);background:#fff5f5}
   .stops input.bad{border-color:var(--red);background:#fff5f5}
   .stops td{padding:5px 6px} .nowrap{white-space:nowrap}
-  .pages{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:2px 16px}
-  .pages label{padding:4px 0;cursor:pointer}
+  .pages{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 28px;font-size:1.02rem}
+  .pages label{display:flex;gap:8px;align-items:flex-start;padding:5px 0;cursor:pointer;line-height:1.3}
+  .pages input{width:18px;height:18px;flex:none;margin-top:2px;padding:0}
   .small{font-size:13px;color:var(--muted)}
   .actionbar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 16px;z-index:30}
   .actionbar div{max-width:968px;margin:0 auto;display:flex;gap:8px;flex-wrap:wrap}
@@ -46,7 +51,7 @@
   #toast.err{background:#b3261e} #toast.warn{background:#9a6700}
   .login{max-width:340px;margin:12vh auto;display:grid;gap:12px}
   .login label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
-  @media(max-width:600px){.wrap{padding:10px}.stops input.st{min-width:170px}}
+  @media(max-width:600px){.wrap{padding:10px}.stops input.st{min-width:170px}.pages{gap:4px 14px;font-size:.92rem}.tm input{width:46px}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -59,6 +64,35 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const TYPES = ["alvia", "ave", "avlo", "ic", "iryo", "ouigo", "regional"];
 const FREQ = ["diario", "diario (exc. sáb)", "diario (exc. dom)", "lun–vie", "lun–sáb", "sábado", "dom", "sáb, dom", "lun, vie, sáb, dom"];
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+function timeField(i, k, v) {
+  const [h = "", m = ""] = (v || "").split(":");
+  const bad = v && !TIME_RE.test(v) ? " bad" : "";
+  return `<span class="tm"><input class="h${bad}" inputmode="numeric" maxlength="2" placeholder="чч" aria-label="часы" data-i="${i}" data-tk="${k}" value="${h}"><b>:</b><input class="m${bad}" inputmode="numeric" maxlength="2" placeholder="мм" aria-label="минуты" data-i="${i}" data-tk="${k}" value="${m}"></span>`;
+}
+function commitTime(t) {
+  const w = t.closest(".tm"), h = w.querySelector(".h").value, m = w.querySelector(".m").value;
+  cur.stops[t.dataset.i][t.dataset.tk] = !h && !m ? "" : h && m ? h.padStart(2, "0") + ":" + m.padStart(2, "0") : `${h}:${m}`;
+  dirty = true;
+}
+function onTime(t) {           // ввод цифр: только цифры, 7 -> 07, автопереход к следующему полю
+  const isH = t.classList.contains("h");
+  let v = t.value.replace(/\D/g, "").slice(0, 2);
+  if (v.length == 1 && +v > (isH ? 2 : 5)) v = "0" + v;
+  t.value = v;
+  commitTime(t);
+  if (v.length < 2) return;
+  const w = t.closest(".tm");
+  if (isH) w.querySelector(".m").focus();
+  else if (t.dataset.tk == "arrival") w.closest("tr").querySelector('.h[data-tk="departure"]').focus();
+  else w.closest("tr").nextElementSibling?.querySelector('[data-k="stname"]')?.focus();
+}
+function onTimeBlur(t) {       // при уходе из поля: добиваем нулём и проверяем
+  if (t.value.length == 1) t.value = "0" + t.value;
+  commitTime(t);
+  const val = cur.stops[t.dataset.i][t.dataset.tk], bad = !!val && !TIME_RE.test(val);
+  t.closest(".tm").querySelectorAll("input").forEach((x) => x.classList.toggle("bad", bad));
+}
 const hhmm = (t) => (t ? t.slice(0, 5) : "");
 const cityOf = (n) => n.split(/[-/]/)[0].trim();
 
@@ -156,8 +190,8 @@ async function openTrain(id) {
 function renderEdit() {
   const stops = cur.stops.map((s, i) => `<tr><td class="small">${i + 1}</td>
     <td><input class="st ${s.station_id ? "" : "bad"}" list="stlist" data-i="${i}" data-k="stname" placeholder="Начни вводить станцию…" value="${esc(s.station_id ? stName(s.station_id) : "")}"></td>
-    <td><input type="time" data-i="${i}" data-k="arrival" value="${s.arrival}"></td>
-    <td><input type="time" data-i="${i}" data-k="departure" value="${s.departure}"></td>
+    <td>${timeField(i, "arrival", s.arrival)}</td>
+    <td>${timeField(i, "departure", s.departure)}</td>
     <td class="nowrap"><button class="icon" data-act="up" data-i="${i}" title="Выше">↑</button>
     <button class="icon" data-act="down" data-i="${i}" title="Ниже">↓</button>
     <button class="icon danger" data-act="del" data-i="${i}" title="Убрать">✕</button></td></tr>`).join("");
@@ -189,6 +223,8 @@ async function save(btn) {
   if (c.stops.length < 2) return fail("Нужно минимум две остановки");
   const stops = [];
   for (const [i, s] of c.stops.entries()) {
+    for (const k of ["arrival", "departure"])
+      if (s[k] && !TIME_RE.test(s[k])) return fail(`Остановка ${i + 1}: время «${s[k]}» указано неверно (часы 00–23, минуты 00–59)`);
     const a = s.arrival || s.departure, d = s.departure || s.arrival;
     if (!s.station_id || !a) return fail(`Остановка ${i + 1}: выбери станцию и укажи время`);
     stops.push({ station_id: +s.station_id, arrival: a, departure: d });
@@ -397,14 +433,15 @@ app.addEventListener("click", async (e) => {
 });
 app.addEventListener("input", async (e) => {
   const t = e.target;
+  if (t.dataset.tk) return onTime(t);
   if (cur && (t.dataset.f || t.dataset.k || t.dataset.pf)) dirty = true;
   if (t.dataset.pf) { pg[t.dataset.pf] = t.value; return; }
   if (t.id == "flt") { filter = t.value; $("#rows").innerHTML = rowsHtml(); }
   else if (t.dataset.f) cur[t.dataset.f] = t.value;
-  else if (t.dataset.k == "arrival" || t.dataset.k == "departure") cur.stops[t.dataset.i][t.dataset.k] = t.value;
 });
 app.addEventListener("change", async (e) => {
   const t = e.target;
+  if (t.dataset.tk) return onTimeBlur(t);
   if (t.dataset.p || t.dataset.ps || t.dataset.k) dirty = true;
   if (t.dataset.ps) {
     const [d, i] = t.dataset.ps.split(":"), st = findStation(t.value);
@@ -433,6 +470,11 @@ document.addEventListener("keydown", (e) => {
     if (b) { e.preventDefault(); document.activeElement.blur(); b.click(); }
   }
   if (e.key == "Enter" && e.target.id == "pw") document.querySelector('[data-act="login"]').click();
+});
+
+document.addEventListener("focusin", (e) => { if (e.target.matches?.(".tm input")) e.target.select(); });
+document.addEventListener("keydown", (e) => {
+  if (e.key == "Backspace" && e.target.matches?.(".tm .m") && !e.target.value) e.target.closest(".tm").querySelector(".h").focus();
 });
 
 async function start() {
