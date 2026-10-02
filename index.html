@@ -6,7 +6,7 @@
     <title>Horarios de Trenes — España</title>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body data-page="index">
 
 <header>
     <h1>Horarios de Trenes</h1>
@@ -29,154 +29,14 @@
         </div>
     </div>
 
-    <a href="madrid-oviedo.html" class="route" data-from="madrid" data-to="oviedo">
-        <h2 data-original="Madrid ↔ Oviedo">Madrid ↔ Oviedo</h2>
+    <div id="routes" style="display: contents">Cargando…</div>
 
-        <div class="train-operators">
-            <img src="images/ave.svg" alt="AVE" class="operator-logo operator-ave">
-            <img src="images/alvia.svg" alt="Alvia" class="operator-logo operator-alvia">
-            <img src="images/avlo.svg" alt="Avlo" class="operator-logo operator-avlo">
-        </div>
-    </a>
-
-    <a href="madrid-santander.html" class="route" data-from="madrid" data-to="santander">
-        <h2 data-original="Madrid ↔ Santander">Madrid ↔ Santander</h2>
-
-        <div class="train-operators">
-            <img src="images/alvia.svg" alt="Alvia" class="operator-logo operator-alvia">
-        </div>
-    </a>
-
-    <a href="madrid-toledo.html" class="route" data-from="madrid" data-to="toledo">
-        <h2 data-original="Madrid ↔ Toledo">Madrid ↔ Toledo</h2>
-
-        <div class="train-operators">
-            <img src="images/alvia.svg" alt="Alvia" class="operator-logo operator-alvia">
-        </div>
-    </a>
-
-    <a href="madrid-gijon.html" class="route" data-from="madrid" data-to="gijon">
-        <h2 data-original="Madrid ↔ Gijón">Madrid ↔ Gijón</h2>
-
-        <div class="train-operators">
-            <img src="images/ave.svg" alt="AVE" class="operator-logo operator-ave">
-            <img src="images/alvia.svg" alt="Alvia" class="operator-logo operator-alvia">
-            <img src="images/avlo.svg" alt="Avlo" class="operator-logo operator-avlo">
-        </div>
-    </a>
-
-    <a href="madrid-aviles.html" class="route" data-from="madrid" data-to="aviles">
-        <h2 data-original="Madrid ↔ Avilés">Madrid ↔ Avilés</h2>
-
-        <div class="train-operators">
-            <img src="images/alvia.svg" alt="Alvia" class="operator-logo operator-alvia">
-        </div>
-    </a>
-
-    <a href="barcelona-sevilla.html" class="route" data-from="barcelona" data-to="sevilla">
-        <h2 data-original="Barcelona ↔ Sevilla">Barcelona ↔ Sevilla</h2>
-
-        <div class="train-operators">
-            <img src="images/ave.svg" alt="AVE" class="operator-logo operator-ave">
-            <img src="images/iryo.svg" alt="iryo" class="operator-logo operator-iryo">
-            <img src="images/ouigo.svg" alt="OUIGO" class="operator-logo operator-ouigo">
-        </div>
-    </a>
-
-    <a href="sevilla-zaragoza.html" class="route" data-from="sevilla" data-to="zaragoza">
-        <h2 data-original="Sevilla ↔ Zaragoza">Sevilla ↔ Zaragoza</h2>
-
-        <div class="train-operators">
-            <img src="images/ave.svg" alt="AVE" class="operator-logo operator-ave">
-            <img src="images/iryo.svg" alt="iryo" class="operator-logo operator-iryo">
-            <img src="images/ouigo.svg" alt="OUIGO" class="operator-logo operator-ouigo">
-        </div>
-    </a>
-
-    <a href="zaragoza-valladolid.html" class="route" data-from="zaragoza" data-to="valladolid">
-        <h2 data-original="Zaragoza ↔ Valladolid">Zaragoza ↔ Valladolid</h2>
-
-        <div class="train-operators">
-            <img src="images/ic.svg" alt="IC" class="operator-logo operator-ic">
-        </div>
-    </a>
-
-    <a href="zaragoza-salamanca.html" class="route" data-from="zaragoza" data-to="salamanca">
-        <h2 data-original="Zaragoza ↔ Salamanca">Zaragoza ↔ Salamanca</h2>
-
-        <div class="train-operators">
-            <img src="images/ic.svg" alt="IC" class="operator-logo operator-ic">
-        </div>
-    </a>
-
-    <a href="valladolid-oviedo.html" class="route" data-from="valladolid" data-to="oviedo">
-        <h2 data-original="Valladolid ↔ Oviedo">Valladolid ↔ Oviedo</h2>
-
-        <div class="train-operators">
-            <img src="images/ave.svg" alt="AVE" class="operator-logo operator-ave">
-            <img src="images/alvia.svg" alt="Alvia" class="operator-logo operator-alvia">
-            <img src="images/avlo.svg" alt="Avlo" class="operator-logo operator-avlo">
-            <img src="images/regional.svg" alt="Regional" class="operator-logo operator-regional">
-        </div>
-    </a>
-
-    <a href="valladolid-santander.html" class="route" data-from="valladolid" data-to="santander">
-        <h2 data-original="Valladolid ↔ Santander">Valladolid ↔ Santander</h2>
-
-        <div class="train-operators">
-            <img src="images/alvia.svg" alt="Alvia" class="operator-logo operator-alvia">
-            <img src="images/regional.svg" alt="Regional" class="operator-logo operator-regional">
-        </div>
-    </a>
-
-    <a href="valladolid-gijon.html" class="route" data-from="valladolid" data-to="gijon">
-        <h2 data-original="Valladolid ↔ Gijon">Valladolid ↔ Gijon</h2>
-
-        <div class="train-operators">
-            <img src="images/ave.svg" alt="AVE" class="operator-logo operator-ave">
-            <img src="images/alvia.svg" alt="Alvia" class="operator-logo operator-alvia">
-            <img src="images/avlo.svg" alt="Avlo" class="operator-logo operator-avlo">
-            <img src="images/regional.svg" alt="Regional" class="operator-logo operator-regional">
-        </div>
-    </a>
-
-    <a href="valladolid-aviles.html" class="route" data-from="valladolid" data-to="aviles">
-        <h2 data-original="Valladolid ↔ Aviles">Valladolid ↔ Aviles</h2>
-
-        <div class="train-operators">
-            <img src="images/alvia.svg" alt="Alvia" class="operator-logo operator-alvia">
-        </div>
-    </a>
-    
-    <a href="alicante-santander.html" class="route" data-from="alicante" data-to="santander">
-        <h2 data-original="Alicante ↔ Santander">Alicante ↔ Santander</h2>
-
-        <div class="train-operators">
-            <img src="images/alvia.svg" alt="Alvia" class="operator-logo operator-alvia">
-        </div>
-    </a>
-
-    <a href="alicante-gijon.html" class="route" data-from="alicante" data-to="gijon">
-        <h2 data-original="Alicante ↔ Gijón">Alicante ↔ Gijón</h2>
-
-        <div class="train-operators">
-            <img src="images/alvia.svg" alt="Alvia" class="operator-logo operator-alvia">
-        </div>
-    </a>
-
-    <a href="albacete-toledo.html" class="route" data-from="albacete" data-to="toledo">
-        <h2 data-original="Albacete ↔ Toledo">Albacete ↔ Toledo</h2>
-
-        <div class="train-operators">
-            <img src="images/alvia.svg" alt="Alvia" class="operator-logo operator-alvia">
-        </div>
-    </a>
     <a href="lista-trenes.html" class="all-trains-link">Ver lista completa de trenes →</a>
 </div>
 
 <footer>
     Datos de ejemplo · Actualiza con horarios oficiales de Renfe
 </footer>
-<script src="search.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
