@@ -235,7 +235,11 @@ td:not(.station) {
   line-height: 1.45;
 }
 
-.note--narrow {
+.table-wrapper--compact + .note {
+  max-width: 420px;
+}
+
+.table-wrapper--long-names + .note {
   max-width: 560px;
 }
 
