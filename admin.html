@@ -46,6 +46,9 @@
   #toast.err{background:#b3261e} #toast.warn{background:#9a6700}
   .login{max-width:340px;margin:12vh auto;display:grid;gap:12px}
   .login label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+  .timepair{display:flex;align-items:center;gap:2px}
+  .timepair input{width:2.6em;text-align:center;padding:6px 4px}
+  .timepair span{color:var(--muted);font-weight:600}
   @media(max-width:600px){.wrap{padding:10px}.stops input.st{min-width:170px}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -134,12 +137,13 @@ function stationSelect(i, val) {
 }
 function renderEdit() {
   const stops = cur.stops.map((s, i) => `<tr><td class="small">${i + 1}</td><td>${stationSelect(i, s.station_id)}</td>
-    <td><input type="text" inputmode="numeric" maxlength="5"
-       pattern="([01]\d|2[0-3]):[0-5]\d"
-       data-i="${i}" data-k="arrival" value="${s.arrival}" placeholder="HH:MM"></td>
-    <td><input type="text" inputmode="numeric" maxlength="5"
-       pattern="([01]\d|2[0-3]):[0-5]\d"
-       data-i="${i}" data-k="departure" value="${s.departure}" placeholder="HH:MM"></td>
+    <td>
+      <span class="timepair">
+        <input type="text" inputmode="numeric" maxlength="2" data-i="${i}" data-k="${key}" data-part="h" value="${h}" placeholder="чч" pattern="[0-2]?\d">
+        <span>:</span>
+        <input type="text" inputmode="numeric" maxlength="2" data-i="${i}" data-k="${key}" data-part="m" value="${m}" placeholder="мм" pattern="[0-5]?\d">
+      </span>
+    </td>
     <td><button data-act="up" data-i="${i}">↑</button> <button data-act="down" data-i="${i}">↓</button>
     <button data-act="del" data-i="${i}">✕</button></td></tr>`).join("");
   const pages = pageDirs().map((d) => `<label><input type="checkbox" data-p="${d.key}" ${cur.pages.has(d.key) ? "checked" : ""}> ${esc(d.label)}</label>`).join("");
