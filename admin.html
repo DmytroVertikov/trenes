@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Админка — расписания</title>
+<style>
+  body{font:15px/1.4 system-ui,sans-serif;max-width:960px;margin:0 auto;padding:16px;color:#1d2433}
+  h1{margin:0 0 12px} h2{margin:20px 0 8px;font-size:17px}
+  input,select,button{font:inherit;padding:6px 8px;border:1px solid #bbb;border-radius:6px;background:#fff}
+  button{cursor:pointer} button.primary{background:#1a6ee0;color:#fff;border-color:#1a6ee0}
+  button.danger{color:#c0261d;border-color:#c0261d} button:disabled{opacity:.5}
+  table{border-collapse:collapse;width:100%} td,th{padding:5px 6px;border-bottom:1px solid #e3e6ec;text-align:left}
+  .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  .grow{flex:1} .card{display:grid;gap:10px;max-width:320px}
+  .msg{padding:8px 12px;border-radius:6px;background:#e8f1ff;margin-bottom:12px;white-space:pre-line}
+  .msg.err{background:#fde8e6;color:#8f1d16} .msg.warn{background:#fff4d6}
+  .pages label{display:block;padding:2px 0} .small{font-size:13px;color:#667}
+  tr.row:hover{background:#f5f8ff;cursor:pointer}
+  .stops input[type=time]{width:110px} .stops select{max-width:260px}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div id="app">Загрузка…</div>
+<script>
+const db = supabase.createClient("https://kitwekuehldxtkmtacrh.supabase.co", "sb_publishable_WiNelnQznSawnLT51_yCYQ_B-ZXOFF1");
+const app = document.getElementById("app");
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const TYPES = ["alvia", "ave", "avlo", "ic", "iryo", "ouigo", "regional"];
+const FREQ = ["diario", "diario (exc. sáb)", "diario (exc. dom)", "lun–vie", "lun–sáb", "sábado", "dom", "sáb, dom", "lun, vie, sáb, dom"];
+const hhmm = (t) => (t ? t.slice(0, 5) : "");
+const cityOf = (n) => n.split(/[-/]/)[0].trim();
+
+let S = { stations: [], list: [], pages: [], ps: [], psv: [] };
+let cur = null, msg = null, filter = "";
+const stName = (id) => (S.stations.find((s) => s.id == id) || {}).name || "?";
+const banner = () => { const m = msg; msg = null; return m ? `<div class="msg ${m.kind || ""}">${esc(m.text)}</div>` : ""; };
+const say = (text, kind) => { msg = { text, kind }; };
+
+function pageDirs() {
+  const m = new Map();
+  for (const r of S.ps) { const k = r.page_id + ":" + r.direction; (m.get(k) || m.set(k, []).get(k)).push(r); }
+  return [...m].map(([key, rows]) => {
+    rows.sort((a, b) => a.seq - b.seq);
+    const p = S.pages.find((x) => x.id == rows[0].page_id);
+    return { key, page_id: rows[0].page_id, direction: rows[0].direction, ids: new Set(rows.map((r) => r.station_id)),
+      label: `${p.title}: ${cityOf(stName(rows[0].station_id))} → ${cityOf(stName(rows.at(-1).station_id))}`,
+      sort: p.sort * 10 + rows[0].direction };
+  }).sort((a, b) => a.sort - b.sort);
+}
+
+async function loadAll() {
+  const q = [db.from("stations").select("*").order("name"), db.from("train_list").select("*"),
+    db.from("pages").select("*").order("sort"), db.from("page_stations").select("*"), db.from("page_services").select("*")];
+  const r = await Promise.all(q);
+  const bad = r.find((x) => x.error);
+  if (bad) throw bad.error;
+  [S.stations, S.list, S.pages, S.ps, S.psv] = r.map((x) => x.data);
+  S.list.sort((a, b) => parseInt(a.number.split(" ")[1]) - parseInt(b.number.split(" ")[1]) || a.freq.localeCompare(b.freq));
+}
+
+/* ---------- вход ---------- */
+function renderLogin() {
+  app.innerHTML = `<h1>Админка расписаний</h1>${banner()}<div class="card">
+    <label>Email<br><input id="em" type="email" style="width:100%"></label>
+    <label>Пароль<br><input id="pw" type="password" style="width:100%"></label>
+    <button class="primary" data-act="login">Войти</button></div>`;
+}
+
+/* ---------- список ---------- */
+function rowsHtml() {
+  const f = filter.toLowerCase();
+  return S.list.filter((t) => !f || `${t.number} ${t.freq} ${t.origin} ${t.destination}`.toLowerCase().includes(f))
+    .map((t) => `<tr class="row" data-act="edit" data-id="${t.id}"><td><b>${esc(t.number)}</b></td>
+      <td>${esc(t.origin)} → ${esc(t.destination)}</td><td>${esc(t.freq)}</td></tr>`).join("");
+}
+function renderList() {
+  app.innerHTML = `<div class="bar"><h1 class="grow">Поезда (${S.list.length})</h1>
+    <button data-act="logout">Выйти</button></div>${banner()}
+    <div class="bar"><input id="flt" class="grow" placeholder="Поиск: номер, город, периодичность" value="${esc(filter)}">
+    <button class="primary" data-act="new">+ Новый поезд</button></div>
+    <table><thead><tr><th>Поезд</th><th>Маршрут</th><th>Периодичность</th></tr></thead><tbody id="rows">${rowsHtml()}</tbody></table>`;
+}
+
+/* ---------- редактирование ---------- */
+async function openTrain(id) {
+  if (!id) {
+    cur = { id: null, number: "", freq: "diario", type: "alvia", pages: new Set(), orig: new Set(),
+      stops: [{ station_id: "", arrival: "", departure: "" }, { station_id: "", arrival: "", departure: "" }] };
+  } else {
+    const t = S.list.find((x) => x.id == id);
+    const { data, error } = await db.from("stops").select("station_id,arrival,departure").eq("service_id", id).order("seq");
+    if (error) { say(error.message, "err"); return renderList(); }
+    const keys = S.psv.filter((x) => x.service_id == id).map((x) => x.page_id + ":" + x.direction);
+    cur = { id, number: t.number, freq: t.freq, type: t.type, pages: new Set(keys), orig: new Set(keys),
+      stops: data.map((s) => ({ station_id: s.station_id, arrival: hhmm(s.arrival), departure: hhmm(s.departure) })) };
+  }
+  renderEdit();
+}
+function stationSelect(i, val) {
+  return `<select data-i="${i}" data-k="station_id"><option value="">— станция —</option>
+    ${S.stations.map((s) => `<option value="${s.id}" ${s.id == val ? "selected" : ""}>${esc(s.name)}</option>`).join("")}
+    <option value="__new">➕ новая станция…</option></select>`;
+}
+function renderEdit() {
+  const stops = cur.stops.map((s, i) => `<tr><td class="small">${i + 1}</td><td>${stationSelect(i, s.station_id)}</td>
+    <td><input type="time" data-i="${i}" data-k="arrival" value="${s.arrival}"></td>
+    <td><input type="time" data-i="${i}" data-k="departure" value="${s.departure}"></td>
+    <td><button data-act="up" data-i="${i}">↑</button> <button data-act="down" data-i="${i}">↓</button>
+    <button data-act="del" data-i="${i}">✕</button></td></tr>`).join("");
+  const pages = pageDirs().map((d) => `<label><input type="checkbox" data-p="${d.key}" ${cur.pages.has(d.key) ? "checked" : ""}> ${esc(d.label)}</label>`).join("");
+  app.innerHTML = `<div class="bar"><button data-act="back">← К списку</button>
+    <h1 class="grow">${cur.id ? esc(cur.number) : "Новый поезд"}</h1></div>${banner()}
+    <div class="bar"><label>Номер<br><input data-f="number" value="${esc(cur.number)}" placeholder="A 4181"></label>
+    <label>Периодичность<br><input data-f="freq" list="freqs" value="${esc(cur.freq)}"></label>
+    <datalist id="freqs">${FREQ.map((f) => `<option value="${f}">`).join("")}</datalist>
+    <label>Тип<br><select data-f="type">${TYPES.map((t) => `<option ${t == cur.type ? "selected" : ""}>${t}</option>`).join("")}</select></label></div>
+    <h2>Остановки (по порядку маршрута)</h2>
+    <p class="small">На первой станции достаточно указать время отправления, на последней — прибытия; если время одно, второе заполнится само.</p>
+    <table class="stops"><thead><tr><th>#</th><th>Станция</th><th>Прибытие</th><th>Отправление</th><th></th></tr></thead><tbody>${stops}</tbody></table>
+    <p><button data-act="add">+ Остановка</button></p>
+    <h2>Показывать на страницах</h2><div class="pages">${pages}</div>
+    <div class="bar" style="margin-top:20px"><button class="primary" data-act="save">Сохранить</button>
+    ${cur.id ? '<button class="danger" data-act="remove">Удалить поезд</button>' : ""}</div>`;
+}
+
+async function save(btn) {
+  const c = cur;
+  c.number = c.number.trim().replace(/\s+/g, " "); c.freq = c.freq.trim();
+  if (!/^[A-Z]+ \d+$/.test(c.number)) return fail("Номер должен выглядеть как «A 4181» или «AVE 3940»");
+  if (!c.freq) return fail("Укажи периодичность");
+  if (c.stops.length < 2) return fail("Нужно минимум две остановки");
+  const stops = [];
+  for (const [i, s] of c.stops.entries()) {
+    const a = s.arrival || s.departure, d = s.departure || s.arrival;
+    if (!s.station_id || !a) return fail(`Остановка ${i + 1}: выбери станцию и укажи время`);
+    stops.push({ station_id: +s.station_id, arrival: a, departure: d });
+  }
+  btn.disabled = true;
+  try {
+    let id = c.id;
+    const row = { number: c.number, freq: c.freq, type: c.type };
+    if (id) { const r = await db.from("services").update(row).eq("id", id); if (r.error) throw r.error; }
+    else { const r = await db.from("services").insert(row).select("id").single(); if (r.error) throw r.error; id = r.data.id; }
+    const r2 = await db.rpc("save_stops", { p_service: id, p_stops: stops }); if (r2.error) throw r2.error;
+
+    const dirs = pageDirs(), warns = [];
+    for (const k of [...c.pages].filter((k) => !c.orig.has(k))) {
+      const d = dirs.find((x) => x.key == k);
+      const last = Math.max(0, ...S.psv.filter((x) => x.page_id == d.page_id && x.direction == d.direction).map((x) => x.sort));
+      const r = await db.from("page_services").insert({ page_id: d.page_id, direction: d.direction, sort: last + 1, service_id: id });
+      if (r.error) throw r.error;
+      const idx = stops.map((s, i) => (d.ids.has(s.station_id) ? i : -1)).filter((i) => i >= 0);
+      if (!idx.length) warns.push(`${d.label}: ни одна остановка поезда не совпадает со строками таблицы этой страницы`);
+      else {
+        const miss = stops.slice(idx[0], idx.at(-1) + 1).filter((s) => !d.ids.has(s.station_id)).map((s) => stName(s.station_id));
+        if (miss.length) warns.push(`${d.label}: этих станций нет в строках страницы, они не будут показаны: ${miss.join(", ")}`);
+      }
+    }
+    for (const k of [...c.orig].filter((k) => !c.pages.has(k))) {
+      const [p, dir] = k.split(":");
+      const r = await db.from("page_services").delete().eq("page_id", p).eq("direction", dir).eq("service_id", id);
+      if (r.error) throw r.error;
+    }
+    await loadAll();
+    say(`Сохранено: ${c.number}` + (warns.length ? "\n⚠ " + warns.join("\n⚠ ") : ""), warns.length ? "warn" : "");
+    renderList();
+  } catch (e) {
+    btn.disabled = false;
+    fail(e.code == "23505" ? "Поезд с таким номером и периодичностью уже есть" : e.message);
+  }
+}
+function fail(text) { say(text, "err"); renderEdit(); }
+
+/* ---------- события ---------- */
+app.addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const a = b.dataset.act, i = +b.dataset.i;
+  if (a == "login") {
+    const { error } = await db.auth.signInWithPassword({ email: $("#em").value, password: $("#pw").value });
+    if (error) { say("Не удалось войти: " + error.message, "err"); return renderLogin(); }
+    return start();
+  }
+  if (a == "logout") { await db.auth.signOut(); return renderLogin(); }
+  if (a == "edit") return openTrain(+b.dataset.id);
+  if (a == "new") return openTrain(null);
+  if (a == "back") return renderList();
+  if (a == "add") { cur.stops.push({ station_id: "", arrival: "", departure: "" }); return renderEdit(); }
+  if (a == "del") { cur.stops.splice(i, 1); return renderEdit(); }
+  if (a == "up" && i > 0) { [cur.stops[i - 1], cur.stops[i]] = [cur.stops[i], cur.stops[i - 1]]; return renderEdit(); }
+  if (a == "down" && i < cur.stops.length - 1) { [cur.stops[i + 1], cur.stops[i]] = [cur.stops[i], cur.stops[i + 1]]; return renderEdit(); }
+  if (a == "save") return save(b);
+  if (a == "remove" && confirm(`Удалить поезд ${cur.number} (${cur.freq}) и все его остановки?`)) {
+    const r = await db.from("services").delete().eq("id", cur.id);
+    if (r.error) return fail(r.error.message);
+    await loadAll(); say("Поезд удалён"); renderList();
+  }
+});
+app.addEventListener("input", async (e) => {
+  const t = e.target;
+  if (t.id == "flt") { filter = t.value; $("#rows").innerHTML = rowsHtml(); }
+  else if (t.dataset.f) cur[t.dataset.f] = t.value;
+  else if (t.dataset.k && t.dataset.k != "station_id") cur.stops[t.dataset.i][t.dataset.k] = t.value;
+});
+app.addEventListener("change", async (e) => {
+  const t = e.target;
+  if (t.dataset.p) { t.checked ? cur.pages.add(t.dataset.p) : cur.pages.delete(t.dataset.p); }
+  else if (t.dataset.k == "station_id") {
+    if (t.value == "__new") {
+      const name = (prompt("Название новой станции (как на сайте):") || "").trim();
+      if (!name) { t.value = cur.stops[t.dataset.i].station_id; return; }
+      const city = (prompt("Город для подписей «desde …»:", cityOf(name)) || cityOf(name)).trim();
+      const r = await db.from("stations").insert({ name, city }).select().single();
+      if (r.error) { alert(r.error.message); return renderEdit(); }
+      S.stations.push(r.data); S.stations.sort((a, b) => a.name.localeCompare(b.name));
+      cur.stops[t.dataset.i].station_id = r.data.id; renderEdit();
+    } else cur.stops[t.dataset.i].station_id = t.value;
+  }
+});
+
+async function start() {
+  try { await loadAll(); renderList(); }
+  catch (e) { say("Не удалось загрузить данные: " + e.message, "err"); renderLogin(); }
+}
+db.auth.getSession().then(({ data }) => (data.session ? start() : renderLogin()));
+</script>
+</body>
+</html>
