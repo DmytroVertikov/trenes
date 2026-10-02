@@ -78,8 +78,7 @@ function rowsHtml() {
       <td>${esc(t.origin)} → ${esc(t.destination)}</td><td>${esc(t.freq)}</td></tr>`).join("");
 }
 function renderList() {
-  app.innerHTML = `<div class="bar"><h1 class="grow">Поезда (${S.list.length})</h1>
-    <button data-act="logout">Выйти</button></div>${banner()}
+  app.innerHTML = `${tabs("trains")}${banner()}
     <div class="bar"><input id="flt" class="grow" placeholder="Поиск: номер, город, периодичность" value="${esc(filter)}">
     <button class="primary" data-act="new">+ Новый поезд</button></div>
     <table><thead><tr><th>Поезд</th><th>Маршрут</th><th>Периодичность</th></tr></thead><tbody id="rows">${rowsHtml()}</tbody></table>`;
@@ -175,6 +174,90 @@ async function save(btn) {
 }
 function fail(text) { say(text, "err"); renderEdit(); }
 
+
+/* ---------- страницы ---------- */
+const tabs = (a) => `<div class="bar"><button class="${a == "trains" ? "primary" : ""}" data-act="tab-trains">Поезда</button>
+  <button class="${a == "pages" ? "primary" : ""}" data-act="tab-pages">Страницы</button><span class="grow"></span>
+  <button data-act="logout">Выйти</button></div>`;
+let pg = null;
+function renderPages() {
+  const rows = S.pages.map((p, i) => `<tr class="row" data-act="editpage" data-id="${p.id}"><td>${i + 1}</td>
+    <td><b>${esc(p.title)}</b></td><td class="small">${esc(p.slug)}</td>
+    <td><button data-act="pup" data-i="${i}">↑</button> <button data-act="pdown" data-i="${i}">↓</button></td></tr>`).join("");
+  app.innerHTML = `${tabs("pages")}${banner()}<div class="bar"><h1 class="grow">Страницы (${S.pages.length})</h1>
+    <button class="primary" data-act="newpage">+ Новая страница</button></div>
+    <table><thead><tr><th>#</th><th>Название</th><th>Адрес</th><th>Порядок</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function openPage(id) {
+  if (!id) pg = { id: null, slug: "", title: "", dirs: [["", ""], ["", ""]] };
+  else {
+    const p = S.pages.find((x) => x.id == id), dirs = [];
+    for (const r of S.ps.filter((x) => x.page_id == id).sort((a, b) => a.seq - b.seq)) (dirs[r.direction] ||= []).push(r.station_id);
+    pg = { id, slug: p.slug, title: p.title, dirs };
+  }
+  renderPageEdit();
+}
+function pstSelect(d, i, val) {
+  return `<select data-ps="${d}:${i}"><option value="">— станция —</option>${S.stations.map((s) =>
+    `<option value="${s.id}" ${s.id == val ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select>`;
+}
+function renderPageEdit() {
+  const url = pg.slug ? (pg.id ? `${pg.slug}.html (или page.html?p=${pg.slug})` : `page.html?p=${pg.slug}`) : "";
+  const dirs = pg.dirs.map((st, d) => {
+    const trains = S.psv.filter((x) => pg.id && x.page_id == pg.id && x.direction == d).sort((a, b) => a.sort - b.sort)
+      .map((x) => (S.list.find((t) => t.id == x.service_id) || {}).number).join(", ");
+    return `<h2>Направление ${d + 1}: ${st[0] ? esc(cityOf(stName(st[0]))) : "?"} → ${st.at(-1) ? esc(cityOf(stName(st.at(-1)))) : "?"}</h2>
+    <p class="small">Поезда: ${esc(trains) || "пока нет (добавляются на вкладке «Поезда»)"}</p>
+    <table class="stops"><tbody>${st.map((v, i) => `<tr><td class="small">${i + 1}</td><td>${pstSelect(d, i, v)}</td>
+      <td><button data-act="pstup" data-d="${d}" data-i="${i}">↑</button> <button data-act="pstdown" data-d="${d}" data-i="${i}">↓</button>
+      <button data-act="pstdel" data-d="${d}" data-i="${i}">✕</button></td></tr>`).join("")}</tbody></table>
+    <p><button data-act="pstadd" data-d="${d}">+ Строка (станция)</button></p>`;
+  }).join("");
+  app.innerHTML = `<div class="bar"><button data-act="tab-pages">← К списку страниц</button>
+    <h1 class="grow">${pg.id ? esc(pg.title) : "Новая страница"}</h1></div>${banner()}
+    <div class="bar"><label>Название<br><input data-pf="title" value="${esc(pg.title)}" placeholder="Madrid ↔ Oviedo"></label>
+    <label>Адрес (латиница, без пробелов)<br><input data-pf="slug" value="${esc(pg.slug)}" ${pg.id ? "disabled" : ""} placeholder="madrid-oviedo"></label></div>
+    ${url ? `<p class="small">Адрес страницы: ${esc(url)}</p>` : ""}
+    <p class="small">Строки — это станции, которые показываются в таблице. Поезд показывает время только на тех станциях, которые есть и в его маршруте, и здесь.</p>
+    ${dirs}
+    <p><button data-act="dadd">+ Направление</button> ${pg.dirs.length > 1 ? '<button data-act="ddel">Удалить последнее направление</button>' : ""}</p>
+    <div class="bar" style="margin-top:20px"><button class="primary" data-act="savepage">Сохранить</button>
+    ${pg.id ? '<button class="danger" data-act="removepage">Удалить страницу</button>' : ""}</div>`;
+}
+function pfail(t) { say(t, "err"); renderPageEdit(); }
+async function savePage(btn) {
+  pg.title = pg.title.trim(); pg.slug = pg.slug.trim();
+  if (!pg.title) return pfail("Укажи название");
+  if (!pg.id && !/^[a-z0-9-]+$/.test(pg.slug)) return pfail("Адрес: только латинские буквы, цифры и дефис");
+  for (const [d, st] of pg.dirs.entries()) {
+    if (st.length < 2 || st.some((v) => !v)) return pfail(`Направление ${d + 1}: минимум две строки, у каждой выбрана станция`);
+    if (new Set(st).size != st.length) return pfail(`Направление ${d + 1}: одна станция выбрана дважды`);
+  }
+  btn.disabled = true;
+  try {
+    let id = pg.id;
+    if (id) { const r = await db.from("pages").update({ title: pg.title }).eq("id", id); if (r.error) throw r.error; }
+    else {
+      const sort = Math.max(0, ...S.pages.map((p) => p.sort)) + 1;
+      const r = await db.from("pages").insert({ slug: pg.slug, title: pg.title, sort }).select("id").single();
+      if (r.error) throw r.error; id = r.data.id;
+    }
+    const r2 = await db.rpc("save_page_stations", { p_page: id, p_dirs: pg.dirs.map((d) => d.map(Number)) });
+    if (r2.error) throw r2.error;
+    const isNew = !pg.id, slug = pg.slug;
+    await loadAll();
+    say(isNew ? `Страница создана. Адрес: page.html?p=${slug}\nДобавь на неё поезда на вкладке «Поезда» и ссылку в index.html.` : "Сохранено");
+    renderPages();
+  } catch (e) { btn.disabled = false; pfail(e.code == "23505" ? "Страница с таким адресом уже есть" : e.message); }
+}
+async function movePage(i, delta) {
+  const a = S.pages[i], b = S.pages[i + delta]; if (!b) return;
+  const r1 = await db.from("pages").update({ sort: b.sort }).eq("id", a.id);
+  const r2 = await db.from("pages").update({ sort: a.sort }).eq("id", b.id);
+  if (r1.error || r2.error) say((r1.error || r2.error).message, "err");
+  await loadAll(); renderPages();
+}
+
 /* ---------- события ---------- */
 app.addEventListener("click", async (e) => {
   const b = e.target.closest("[data-act]"); if (!b) return;
@@ -184,7 +267,26 @@ app.addEventListener("click", async (e) => {
     if (error) { say("Не удалось войти: " + error.message, "err"); return renderLogin(); }
     return start();
   }
+  const d = +b.dataset.d;
   if (a == "logout") { await db.auth.signOut(); return renderLogin(); }
+  if (a == "tab-trains") return renderList();
+  if (a == "tab-pages") return renderPages();
+  if (a == "editpage") return openPage(+b.dataset.id);
+  if (a == "newpage") return openPage(null);
+  if (a == "pup") return movePage(i, -1);
+  if (a == "pdown") return movePage(i, 1);
+  if (a == "pstadd") { pg.dirs[d].push(""); return renderPageEdit(); }
+  if (a == "pstdel") { pg.dirs[d].splice(i, 1); return renderPageEdit(); }
+  if (a == "pstup" && i > 0) { const r = pg.dirs[d]; [r[i - 1], r[i]] = [r[i], r[i - 1]]; return renderPageEdit(); }
+  if (a == "pstdown" && i < pg.dirs[d].length - 1) { const r = pg.dirs[d]; [r[i + 1], r[i]] = [r[i], r[i + 1]]; return renderPageEdit(); }
+  if (a == "dadd") { pg.dirs.push(["", ""]); return renderPageEdit(); }
+  if (a == "ddel") { if (confirm("Удалить последнее направление? Поезда этого направления тоже будут убраны со страницы.")) pg.dirs.pop(); return renderPageEdit(); }
+  if (a == "savepage") return savePage(b);
+  if (a == "removepage" && confirm(`Удалить страницу «${pg.title}»? Сами поезда останутся.`)) {
+    const r = await db.from("pages").delete().eq("id", pg.id);
+    if (r.error) return pfail(r.error.message);
+    await loadAll(); say("Страница удалена"); return renderPages();
+  }
   if (a == "edit") return openTrain(+b.dataset.id);
   if (a == "new") return openTrain(null);
   if (a == "back") return renderList();
@@ -201,12 +303,14 @@ app.addEventListener("click", async (e) => {
 });
 app.addEventListener("input", async (e) => {
   const t = e.target;
+  if (t.dataset.pf) { pg[t.dataset.pf] = t.value; return; }
   if (t.id == "flt") { filter = t.value; $("#rows").innerHTML = rowsHtml(); }
   else if (t.dataset.f) cur[t.dataset.f] = t.value;
   else if (t.dataset.k && t.dataset.k != "station_id") cur.stops[t.dataset.i][t.dataset.k] = t.value;
 });
 app.addEventListener("change", async (e) => {
   const t = e.target;
+  if (t.dataset.ps) { const [d, i] = t.dataset.ps.split(":"); pg.dirs[d][i] = t.value; return renderPageEdit(); }
   if (t.dataset.p) { t.checked ? cur.pages.add(t.dataset.p) : cur.pages.delete(t.dataset.p); }
   else if (t.dataset.k == "station_id") {
     if (t.value == "__new") {
