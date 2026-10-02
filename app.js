@@ -39,19 +39,19 @@ function renderList(rows) {
 const cell = (t) => (!t || !t[0] ? "" : t[0] === t[1] || !t[1] ? t[0] : `${t[0]} / ${t[1]}`);
 
 function renderPage(p) {
-  const types = new Set(p.directions.flatMap((d) => d.services.map((s) => s.type)));
+  const types = new Set(p.directions.flatMap((d) => (d.services || []).map((s) => s.type)));
   const tables = p.directions.map((d) => {
     const ids = new Set(d.stations.map((s) => s.id));
     const first = d.stations[0].city, last = d.stations[d.stations.length - 1].city;
-    const head = d.services.map((s) => {
+    const head = (d.services || []).map((s) => {
       const note = [ids.has(s.origin.id) ? "" : `desde ${esc(s.origin.city)}`, ids.has(s.destination.id) ? "" : `→ ${esc(s.destination.city)}`]
         .filter(Boolean).join(" ");
       return `<th><div class="th-train"><span class="th-logo-badge"><img class="th-logo th-logo-${s.type}" src="images/${s.type}.svg" alt="${s.type}"></span>
         <span class="th-code"><a href="${trainHref(s.number)}">${esc(s.number)}</a></span>${note ? `<span class="route-note">${note}</span>` : ""}</div></th>`;
     }).join("");
-    const days = d.services.map((s) => `<th class="days">${esc(s.freq)}</th>`).join("");
+    const days = (d.services || []).map((s) => `<th class="days">${esc(s.freq)}</th>`).join("");
     const body = d.stations.map((st) =>
-      `<tr><td class="station">${esc(st.name)}</td>${d.services.map((s) => `<td>${cell(s.times[st.id])}</td>`).join("")}</tr>`).join("");
+      `<tr><td class="station">${esc(st.name)}</td>${(d.services || []).map((s) => `<td>${cell(s.times[st.id])}</td>`).join("")}</tr>`).join("");
     return `<h2 class="section-title">${esc(first)} → ${esc(last)}</h2>
 <div class="table-wrapper"><table>
 <thead><tr><th></th>${head}</tr><tr><th class="days"></th>${days}</tr></thead>
