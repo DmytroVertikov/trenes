@@ -29,7 +29,7 @@ function renderList(rows) {
 <table class="trains-table">
 <thead><tr><th>Tren</th><th>Ruta completa</th><th>Periodicidad</th></tr></thead>
 <tbody>${rows.map((r) => `
-<tr><td class="train-num-cell"><a href="${trainHref(r.number)}" style="color:inherit">${esc(r.number)}</a></td>
+<tr><td class="train-num-cell"><a href="${trainHref(r.number)}">${esc(r.number)}</a></td>
 <td class="route-cell">${esc(r.origin)} → ${esc(r.destination)}</td>
 <td class="freq-cell">${esc(r.freq)}</td></tr>`).join("")}
 </tbody></table></div>
@@ -39,47 +39,53 @@ function renderList(rows) {
 const cell = (t) => (!t || !t[0] ? "" : t[0] === t[1] || !t[1] ? t[0] : `${t[0]} / ${t[1]}`);
 
 function renderPage(p) {
-  const types = [...new Set(p.directions.flatMap((d) => d.services.map((s) => s.type)))];
+  const types = new Set(p.directions.flatMap((d) => d.services.map((s) => s.type)));
   const tables = p.directions.map((d) => {
     const ids = new Set(d.stations.map((s) => s.id));
     const first = d.stations[0].city, last = d.stations[d.stations.length - 1].city;
     const head = d.services.map((s) => {
-      const from = ids.has(s.origin.id) ? "" : ` desde ${esc(s.origin.city)}`;
-      const to = ids.has(s.destination.id) ? "" : ` → ${esc(s.destination.city)}`;
-      return `<th><img src="images/${s.type}.svg" alt="" height="18"> <a href="${trainHref(s.number)}" style="color:inherit;text-decoration:underline dotted">${esc(s.number)}</a>${from}${to}</th>`;
+      const note = [ids.has(s.origin.id) ? "" : `desde ${esc(s.origin.city)}`, ids.has(s.destination.id) ? "" : `→ ${esc(s.destination.city)}`]
+        .filter(Boolean).join(" ");
+      return `<th><div class="th-train"><span class="th-logo-badge"><img class="th-logo th-logo-${s.type}" src="images/${s.type}.svg" alt="${s.type}"></span>
+        <span class="th-code"><a href="${trainHref(s.number)}">${esc(s.number)}</a></span>${note ? `<span class="route-note">${note}</span>` : ""}</div></th>`;
     }).join("");
-    const freq = d.services.map((s) => `<td>${esc(s.freq)}</td>`).join("");
+    const days = d.services.map((s) => `<th class="days">${esc(s.freq)}</th>`).join("");
     const body = d.stations.map((st) =>
-      `<tr><td>${esc(st.name)}</td>${d.services.map((s) => `<td>${cell(s.times[st.id])}</td>`).join("")}</tr>`).join("");
-    return `<h2>${esc(first)} → ${esc(last)}</h2>
-<div class="table-wrapper"><table class="trains-table">
-<thead><tr><th></th>${head}</tr><tr><td></td>${freq}</tr></thead>
+      `<tr><td class="station">${esc(st.name)}</td>${d.services.map((s) => `<td>${cell(s.times[st.id])}</td>`).join("")}</tr>`).join("");
+    return `<h2 class="section-title">${esc(first)} → ${esc(last)}</h2>
+<div class="table-wrapper"><table>
+<thead><tr><th></th>${head}</tr><tr><th class="days"></th>${days}</tr></thead>
 <tbody>${body}</tbody></table></div>`;
   }).join("");
   return wrap(`
 <h1>${esc(p.title)}</h1>
 <p class="subtitle">Horarios de trenes</p>
-<div>${types.map((t) => `<img src="images/${t}.svg" alt="${t}" height="24">`).join(" ")}</div>
+${logosHtml(types)}
 ${tables}
 <footer>${esc(p.title)} · Datos de ejemplo</footer>`);
 }
 
 
 
+
+const logosHtml = (types) => `<div class="train-operators">${OPERATORS.filter(([t]) => types.has(t)).map(([t, alt]) =>
+  `<img src="images/${t}.svg" alt="${alt}" class="operator-logo operator-${t}">`).join("")}</div>`;
+
 /* ---------- страница одного поезда ---------- */
 const trainHref = (n) => `train.html?n=${encodeURIComponent(n)}`;
 function renderTrain(rows, n) {
   const body = rows.map((sv) => {
     const st = sv.stops, last = st.length - 1;
-    const trs = st.map((s, i) => `<tr><td class="route-cell">${esc(s.stations.name)}</td>
+    const trs = st.map((s, i) => `<tr><td class="station">${esc(s.stations.name)}</td>
       <td>${i == 0 ? "—" : esc(hhmm(s.arrival))}</td><td>${i == last ? "—" : esc(hhmm(s.departure))}</td></tr>`).join("");
-    return `<h2><img src="images/${sv.type}.svg" alt="" height="22"> ${esc(st[0].stations.name)} → ${esc(st[last].stations.name)}</h2>
+    return `<h2 class="section-title">${esc(st[0].stations.name)} → ${esc(st[last].stations.name)}</h2>
 <p class="subtitle">${esc(sv.freq)}</p>
-<div class="table-wrapper"><table class="trains-table">
+<div class="table-wrapper table-wrapper--long-names"><table>
 <thead><tr><th>Estación</th><th>Llegada</th><th>Salida</th></tr></thead><tbody>${trs}</tbody></table></div>`;
   }).join("");
   return `<div class="top-bar"><a href="lista-trenes.html" class="back">← Lista de trenes</a></div>
 <h1>${esc(n)}</h1>
+${logosHtml(new Set(rows.map((r) => r.type)))}
 ${body}
 <footer>${esc(n)} · Datos de ejemplo</footer>`;
 }
