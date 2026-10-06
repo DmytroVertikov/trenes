@@ -63,7 +63,14 @@ const app = document.getElementById("app");
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const TYPES = ["alvia", "ave", "avlo", "ic", "iryo", "ouigo", "regional"];
-const FREQ = ["diario", "diario (exc. sáb)", "diario (exc. dom)", "lun–vie", "lun–sáb", "sábado", "dom", "sáb, dom", "lun, vie, sáb, dom"];
+const FREQ_BASE = ["diario", "diario (exc. sáb)", "diario (exc. dom)", "lun–vie", "lun–sáb", "sábado", "dom", "sáb, dom", "lun, vie, sáb, dom"];
+// варианты периодичности: все значения из БД (по частоте) + базовые, без дублей
+const freqOptions = () => {
+  const cnt = new Map();
+  for (const t of S.list || []) { const f = (t.freq || "").trim(); if (f) cnt.set(f, (cnt.get(f) || 0) + 1); }
+  for (const f of FREQ_BASE) if (!cnt.has(f)) cnt.set(f, 0);
+  return [...cnt.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "es")).map(([f]) => f);
+};
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 function timeField(i, k, v) {
   const [h = "", m = ""] = (v || "").split(":");
@@ -203,7 +210,7 @@ function renderEdit() {
       <label>Номер<input data-f="number" value="${esc(cur.number)}" placeholder="A 4181"></label>
       <label>Периодичность<input data-f="freq" list="freqs" value="${esc(cur.freq)}"></label>
       <label>Тип<select data-f="type">${TYPES.map((t) => `<option ${t == cur.type ? "selected" : ""}>${t}</option>`).join("")}</select></label>
-    </div><datalist id="freqs">${FREQ.map((f) => `<option value="${f}">`).join("")}</datalist></div>
+    </div><datalist id="freqs">${freqOptions().map((f) => `<option value="${esc(f)}">`).join("")}</datalist></div>
     <div class="card"><h2>Остановки по порядку маршрута</h2>
       <p class="small" style="margin:0 0 10px">На первой станции достаточно времени отправления, на последней — прибытия; если время одно, второе заполнится само.
       Нет нужной станции — просто введи новое название, админка предложит её создать.</p>
