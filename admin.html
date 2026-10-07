@@ -62,7 +62,7 @@ const db = supabase.createClient("https://kitwekuehldxtkmtacrh.supabase.co", "sb
 const app = document.getElementById("app");
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const TYPES = ["alvia", "ave", "avlo", "ic", "iryo", "md", "ouigo", "regional"];
+const TYPES = ["alvia", "avant", "ave", "avlo", "ic", "iryo", "md", "ouigo", "regional"];
 const FREQ_BASE = ["diario", "diario (exc. sáb)", "diario (exc. dom)", "lun–vie", "lun–sáb", "sáb, dom"];
 // варианты периодичности: все значения из БД (по частоте) + базовые, без дублей
 const freqOptions = () => {
