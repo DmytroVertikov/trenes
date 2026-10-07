@@ -92,7 +92,7 @@ ${body}
 const hhmm = (t) => (t ? t.slice(0, 5) : "");
 
 /* ---------- главная: список маршрутов из таблицы pages ---------- */
-const OPERATORS = const OPERATORS = [["ave", "AVE"], ["alvia", "Alvia"], ["md", "Media Distancia"], ["avlo", "Avlo"], ["iryo", "iryo"], ["ouigo", "OUIGO"], ["ic", "IC"], ["regional", "Regional"]];
+const OPERATORS = [["ave", "AVE"], ["alvia", "Alvia"], ["md", "Media Distancia"], ["avlo", "Avlo"], ["iryo", "iryo"], ["ouigo", "OUIGO"], ["ic", "IC"], ["regional", "Regional"]];
 const norm = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
 function renderRoutes(pages) {
