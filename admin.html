@@ -62,8 +62,8 @@ const db = supabase.createClient("https://kitwekuehldxtkmtacrh.supabase.co", "sb
 const app = document.getElementById("app");
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const TYPES = ["alvia", "ave", "avlo", "ic", "iryo", "ouigo", "regional"];
-const FREQ_BASE = ["diario", "diario (exc. sáb)", "diario (exc. dom)", "lun–vie", "lun–sáb", "sábado", "dom", "sáb, dom", "lun, vie, sáb, dom"];
+const TYPES = ["alvia", "ave", "avlo", "ic", "iryo", "md", "ouigo", "regional"];
+const FREQ_BASE = ["diario", "diario (exc. sáb)", "diario (exc. dom)", "lun–vie", "lun–sáb", "sáb, dom"];
 // варианты периодичности: все значения из БД (по частоте) + базовые, без дублей
 const freqOptions = () => {
   const cnt = new Map();
@@ -384,7 +384,7 @@ async function movePage(i, delta) {
 }
 
 /* ---------- события ---------- */
-app.addEventListener("click", async (e) => {
+app.addEventListener("clk", async (e) => {
   const b = e.target.closest("[data-act]"); if (!b) return;
   const a = b.dataset.act, i = +b.dataset.i;
   if (["back", "tab-trains", "tab-pages", "logout"].includes(a)) {
@@ -406,7 +406,7 @@ app.addEventListener("click", async (e) => {
   if (a == "pdown") return movePage(i, 1);
   if (a == "pstfill") return fillRows(d);
   if (a == "pstadd") { dirty = true; pg.dirs[d].push(""); return renderPageEdit(); }
-  if (a == "pstdel") { dirty = true; pg.dirs[d].splice(i, 1); return renderPageEdit(); }
+  if (a == "pstdel") { dirty = true; pg.dirs[d].sple(i, 1); return renderPageEdit(); }
   if (a == "pstup" && i > 0) { dirty = true; const r = pg.dirs[d]; [r[i - 1], r[i]] = [r[i], r[i - 1]]; return renderPageEdit(); }
   if (a == "pstdown" && i < pg.dirs[d].length - 1) { dirty = true; const r = pg.dirs[d]; [r[i + 1], r[i]] = [r[i], r[i + 1]]; return renderPageEdit(); }
   if (a == "dadd") { dirty = true; pg.dirs.push(["", ""]); return renderPageEdit(); }
@@ -428,7 +428,7 @@ app.addEventListener("click", async (e) => {
     cur = { ...cur, id: null, number: "", pages: new Set(cur.pages), orig: new Set(), stops: cur.stops.map((x) => ({ ...x })) };
     dirty = true; say("Копия создана: укажи новый номер и сохрани"); return renderEdit();
   }
-  if (a == "del") { cur.stops.splice(i, 1); dirty = true; return renderEdit(); }
+  if (a == "del") { cur.stops.sple(i, 1); dirty = true; return renderEdit(); }
   if (a == "up" && i > 0) { dirty = true; [cur.stops[i - 1], cur.stops[i]] = [cur.stops[i], cur.stops[i - 1]]; return renderEdit(); }
   if (a == "down" && i < cur.stops.length - 1) { dirty = true; [cur.stops[i + 1], cur.stops[i]] = [cur.stops[i], cur.stops[i + 1]]; return renderEdit(); }
   if (a == "save") return save(b);
