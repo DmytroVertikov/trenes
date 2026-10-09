@@ -485,13 +485,8 @@ footer {
   padding-bottom: 20px;
 }
 
-.table-nav { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 12px; scrollbar-width: none; }
-.table-nav a { flex: 0 0 auto; padding: 8px 12px; border: 1px solid #d0d5dd; border-radius: 999px;
-               font-size: 14px; text-decoration: none; color: inherit; white-space: nowrap; }
-.table-nav a small { display: block; font-size: 11px; opacity: .65; }
-.section-sfx { font-weight: 400; opacity: .7; font-size: .8em; }
 .section-title { scroll-margin-top: 12px; }
-
+.table-sub { margin: 14px 0 6px; font-size: 14px; font-weight: 600; opacity: .75; }
 .table-wrapper td.station { position: sticky; left: 0; background: inherit; z-index: 1; }
 
 
