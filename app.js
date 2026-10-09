@@ -199,8 +199,12 @@ async function renderIndex() {
     } else {
       const p = await api("rpc/get_page", { p_slug: slug });
       if (!p) throw new Error(`Página «${slug}» no encontrada`);
+      let notes = [];
+      try {
+        notes = await api(`page_dir_notes?select=direction,note,pages!inner(slug)&pages.slug=eq.${encodeURIComponent(slug)}`);
+      } catch (e) { /* таблицы примечаний ещё нет — заголовки без них */ }
       document.title = `${p.title} — Horarios`;
-      app.innerHTML = renderPage(p);
+      app.innerHTML = renderPage(p, notes);
     }
   } catch (e) {
     app.textContent = "No se pudieron cargar los horarios. " + e.message;
