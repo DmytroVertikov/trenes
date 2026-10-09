@@ -67,7 +67,7 @@ function renderPage(p) {
     const body = d.stations.map((st) =>
       `<tr><td class="station">${esc(st.name)}</td>${(d.services || []).map((s) => `<td>${cell(s.times[st.id])}</td>`).join("")}</tr>`).join("");
     return `${sub ? `<p class="table-sub">${esc(sub)}</p>` : ""}
-<div class="table-wrapper"><table>
+<div class="table-wrapper${(d.services || []).length <= 2 ? " table-wrapper--few" : ""}"><table>
 <thead><tr><th></th>${head}</tr><tr><th class="days"></th>${days}</tr></thead>
 <tbody>${body}</tbody></table></div>`;
   };
