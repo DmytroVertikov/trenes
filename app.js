@@ -70,55 +70,6 @@ ${tables}
 <footer>${esc(p.title)} · Datos de ejemplo</footer>`);
 }
 
-  const opNames = (d) => OPERATORS
-    .filter(([t]) => (d.services || []).some((s) => s.type === t))
-    .map(([, n]) => n).join(" · ");
-
-  const table = (d, sub) => {
-    const ids = new Set(d.stations.map((s) => s.id));
-    const head = (d.services || []).map((s) => {
-      const note = [ids.has(s.origin.id) ? "" : `desde ${esc(s.origin.city)}`, ids.has(s.destination.id) ? "" : `→ ${esc(s.destination.city)}`]
-        .filter(Boolean).join(" ");
-      return `<th><div class="th-train"><span class="th-logo-badge"><img class="th-logo th-logo-${s.type}" src="images/${s.type}.svg" alt="${s.type}"></span>
-        <span class="th-code"><a href="${trainHref(s.number)}">${esc(s.number)}</a></span>${note ? `<span class="route-note">${note}</span>` : ""}</div></th>`;
-    }).join("");
-    const days = (d.services || []).map((s) => `<th class="days">${esc(s.freq)}</th>`).join("");
-    const body = d.stations.map((st) =>
-      `<tr><td class="station">${esc(st.name)}</td>${(d.services || []).map((s) => `<td>${cell(s.times[st.id])}</td>`).join("")}</tr>`).join("");
-    return `${sub ? `<p class="table-sub">${esc(sub)}</p>` : ""}
-<div class="table-wrapper${(d.services || []).length <= 2 ? " table-wrapper--few" : ""}"><table>
-<thead><tr><th></th>${head}</tr><tr><th class="days"></th>${days}</tr></thead>
-<tbody>${body}</tbody></table></div>`;
-  };
-
-  const tables = groups.map((g) => {
-    const d0 = g.dirs[0];
-    const first = d0.stations[0].city, last = d0.stations[d0.stations.length - 1].city;
-    const main = g.dirs.find((d) => !isMd(d));      // основная (не MD) таблица группы
-    const many = g.dirs.length > 1;
-    const inner = g.dirs.map((d) => {
-      let sub = "";
-      if (many) {
-        sub = opNames(d);
-        if (!isMd(d) && d !== main) {
-          const via = [...new Set(d.stations.slice(1, -1)
-            .filter((s) => !main.stations.some((o) => o.id === s.id)).map((s) => s.city))].slice(0, 3);
-          sub += (sub ? " · " : "") + (via.length ? "vía " + via.join(", ") : "otro itinerario");
-        }
-      }
-      return table(d, sub);
-    }).join("");
-    return `<h2 class="section-title">${esc(first)} → ${esc(last)}</h2>${inner}`;
-  }).join("");
-
-  return wrap(`
-<h1>${esc(p.title)}</h1>
-<p class="subtitle">Horarios de trenes</p>
-${logosHtml(types)}
-${tables}
-<footer>${esc(p.title)} · Datos de ejemplo</footer>`);
-}
-
 
 const logosHtml = (types) => `<div class="train-operators">${OPERATORS.filter(([t]) => types.has(t)).map(([t, alt]) =>
   `<img src="images/${t}.svg" alt="${alt}" class="operator-logo operator-${t}">`).join("")}</div>`;
