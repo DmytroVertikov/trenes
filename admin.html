@@ -103,7 +103,7 @@ function onTimeBlur(t) {       // при уходе из поля: добива�
 const hhmm = (t) => (t ? t.slice(0, 5) : "");
 const cityOf = (n) => n.split(/[-/]/)[0].trim();
 
-let S = { stations: [], list: [], pages: [], ps: [], psv: [] };
+let S = { stations: [], list: [], pages: [], ps: [], psv: [], notes: [] };
 let cur = null, msg = null, filter = "";
 const stName = (id) => (S.stations.find((s) => s.id == id) || {}).name || "?";
 const banner = () => "";
@@ -142,13 +142,30 @@ function pageDirs() {
   }).sort((a, b) => a.sort - b.sort);
 }
 
+/* Supabase отдаёт максимум 1000 строк за запрос — забираем всё страницами */
+async function fetchAll(table, orders) {
+  const out = [];
+  for (let from = 0; ; from += 1000) {
+    let q = db.from(table).select("*");
+    for (const o of orders) q = q.order(o);
+    const r = await q.range(from, from + 999);
+    if (r.error) return { error: r.error };
+    out.push(...r.data);
+    if (r.data.length < 1000) return { data: out };
+  }
+}
+
 async function loadAll() {
-  const q = [db.from("stations").select("*").order("name"), db.from("train_list").select("*"),
-    db.from("pages").select("*").order("sort"), db.from("page_stations").select("*"), db.from("page_services").select("*")];
+  const q = [fetchAll("stations", ["name", "id"]), fetchAll("train_list", ["id"]),
+    db.from("pages").select("*").order("sort"),
+    fetchAll("page_stations", ["page_id", "direction", "seq"]),
+    fetchAll("page_services", ["page_id", "direction", "sort"]),
+    fetchAll("page_dir_notes", ["page_id", "direction"])];
   const r = await Promise.all(q);
-  const bad = r.find((x) => x.error);
+  const bad = r.slice(0, 5).find((x) => x.error);
   if (bad) throw bad.error;
-  [S.stations, S.list, S.pages, S.ps, S.psv] = r.map((x) => x.data);
+  [S.stations, S.list, S.pages, S.ps, S.psv] = r.slice(0, 5).map((x) => x.data);
+  S.notes = r[5].error ? [] : r[5].data;      // таблицы примечаний может ещё не быть
   S.list.sort((a, b) => parseInt(a.number.split(" ")[1]) - parseInt(b.number.split(" ")[1]) || a.freq.localeCompare(b.freq));
 }
 
@@ -299,11 +316,12 @@ function renderPages() {
 }
 function openPage(id) {
   dirty = false;
-  if (!id) pg = { id: null, slug: "", title: "", dirs: [["", ""], ["", ""]] };
+  if (!id) pg = { id: null, slug: "", title: "", dirs: [["", ""], ["", ""]], notes: ["", ""] };
   else {
     const p = S.pages.find((x) => x.id == id), dirs = [];
     for (const r of S.ps.filter((x) => x.page_id == id).sort((a, b) => a.seq - b.seq)) (dirs[r.direction] ||= []).push(r.station_id);
-    pg = { id, slug: p.slug, title: p.title, dirs };
+    pg = { id, slug: p.slug, title: p.title, dirs,
+      notes: dirs.map((_, d) => (S.notes.find((n) => n.page_id == id && n.direction == d) || {}).note || "") };
   }
   renderPageEdit();
 }
@@ -312,7 +330,9 @@ function renderPageEdit() {
   const dirs = pg.dirs.map((st, d) => {
     const trains = S.psv.filter((x) => pg.id && x.page_id == pg.id && x.direction == d).sort((a, b) => a.sort - b.sort)
       .map((x) => (S.list.find((t) => t.id == x.service_id) || {}).number).join(", ");
-    return `<div class="card"><h2>Направление ${d + 1}: ${st[0] ? esc(cityOf(stName(st[0]))) : "?"} → ${st.at(-1) ? esc(cityOf(stName(st.at(-1)))) : "?"}</h2>
+    return `<div class="card"><h2>Направление ${d + 1}: ${st[0] ? esc(cityOf(stName(st[0]))) : "?"} → ${st.at(-1) ? esc(cityOf(stName(st.at(-1)))) : "?"}${pg.notes[d] ? " (" + esc(pg.notes[d]) + ")" : ""}</h2>
+    <label class="small" style="display:block;margin:0 0 10px">Примечание в заголовке на сайте (необязательно)
+      <input data-note="${d}" value="${esc(pg.notes[d] || "")}" placeholder="vía Zaragoza" style="width:100%;margin-top:4px"></label>
     <p class="small" style="margin:0 0 10px">Поезда: ${esc(trains) || "пока нет (добавляются на вкладке «Поезда»)"}</p>
     <div class="scroll"><table class="stops"><tbody>${st.map((v, i) => `<tr><td class="small">${i + 1}</td>
       <td><input class="st ${v ? "" : "bad"}" list="stlist" data-ps="${d}:${i}" placeholder="Начни вводить станцию…" value="${esc(v ? stName(v) : "")}"></td>
@@ -369,6 +389,11 @@ async function savePage(btn) {
     }
     const r2 = await db.rpc("save_page_stations", { p_page: id, p_dirs: pg.dirs.map((d) => d.map(Number)) });
     if (r2.error) throw r2.error;
+    {   // примечания к заголовкам направлений
+      const d1 = await db.from("page_dir_notes").delete().eq("page_id", id); if (d1.error) throw d1.error;
+      const rows = pg.notes.map((n, d) => ({ page_id: id, direction: d, note: (n || "").trim() })).filter((x) => x.note);
+      if (rows.length) { const i1 = await db.from("page_dir_notes").insert(rows); if (i1.error) throw i1.error; }
+    }
     const isNew = !pg.id, slug = pg.slug;
     await loadAll();
     say(isNew ? `Страница создана. Адрес: page.html?p=${slug}\nДобавь на неё поезда на вкладке «Поезда» и ссылку в index.html.` : "Сохранено");
@@ -409,8 +434,8 @@ app.addEventListener("click", async (e) => {
   if (a == "pstdel") { dirty = true; pg.dirs[d].splice(i, 1); return renderPageEdit(); }
   if (a == "pstup" && i > 0) { dirty = true; const r = pg.dirs[d]; [r[i - 1], r[i]] = [r[i], r[i - 1]]; return renderPageEdit(); }
   if (a == "pstdown" && i < pg.dirs[d].length - 1) { dirty = true; const r = pg.dirs[d]; [r[i + 1], r[i]] = [r[i], r[i + 1]]; return renderPageEdit(); }
-  if (a == "dadd") { dirty = true; pg.dirs.push(["", ""]); return renderPageEdit(); }
-  if (a == "ddel") { dirty = true; if (confirm("Удалить последнее направление? Поезда этого направления тоже будут убраны со страницы.")) pg.dirs.pop(); return renderPageEdit(); }
+  if (a == "dadd") { dirty = true; pg.dirs.push(["", ""]); pg.notes.push(""); return renderPageEdit(); }
+  if (a == "ddel") { dirty = true; if (confirm("Удалить последнее направление? Поезда этого направления тоже будут убраны со страницы.")) { pg.dirs.pop(); pg.notes.pop(); } return renderPageEdit(); }
   if (a == "savepage") return savePage(b);
   if (a == "removepage" && confirm(`Удалить страницу «${pg.title}»? Сами поезда останутся.`)) {
     const r = await db.from("pages").delete().eq("id", pg.id);
@@ -443,6 +468,7 @@ app.addEventListener("input", async (e) => {
   if (t.dataset.tk) return onTime(t);
   if (cur && (t.dataset.f || t.dataset.k || t.dataset.pf)) dirty = true;
   if (t.dataset.pf) { pg[t.dataset.pf] = t.value; return; }
+  if (t.dataset.note !== undefined) { pg.notes[+t.dataset.note] = t.value; dirty = true; return; }
   if (t.id == "flt") { filter = t.value; $("#rows").innerHTML = rowsHtml(); }
   else if (t.dataset.f) cur[t.dataset.f] = t.value;
 });
