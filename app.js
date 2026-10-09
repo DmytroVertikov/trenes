@@ -1,3 +1,4 @@
+
 // Supabase: Project Settings -> API (URL и публичный anon key; он безопасен для фронтенда,
 // запись закрыта правилами RLS)
 const SUPABASE_URL = "https://kitwekuehldxtkmtacrh.supabase.co";
@@ -57,7 +58,7 @@ function renderPage(p, notes = []) {
     const body = d.stations.map((st) =>
       `<tr><td class="station">${esc(st.name)}</td>${(d.services || []).map((s) => `<td>${cell(s.times[st.id])}</td>`).join("")}</tr>`).join("");
     return `<h2 class="section-title">${esc(first)} → ${esc(last)}${note ? ` (${esc(note)})` : ""}</h2>
-<div class="table-wrapper"><table>
+<div class="table-wrapper" style="max-width:${Math.min(1100, 360 + (d.services || []).length * 120)}px"><table>
 <thead><tr><th></th>${head}</tr><tr><th class="days"></th>${days}</tr></thead>
 <tbody>${body}</tbody></table></div>`;
   }).join("");
