@@ -486,6 +486,7 @@ footer {
 }
 
 .table-sub { margin: 14px 0 6px; font-size: 14px; font-weight: 600; opacity: .75; }
+.table-wrapper--few { max-width: 560px; }
 
 @media (max-width: 600px) {
 
