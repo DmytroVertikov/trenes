@@ -485,10 +485,7 @@ footer {
   padding-bottom: 20px;
 }
 
-.section-title { scroll-margin-top: 12px; }
 .table-sub { margin: 14px 0 6px; font-size: 14px; font-weight: 600; opacity: .75; }
-.table-wrapper td.station { position: sticky; left: 0; background: inherit; z-index: 1; }
-
 
 @media (max-width: 600px) {
 
@@ -557,7 +554,6 @@ footer {
   #swapBtn {
     margin: 0 auto;
   }
-  .table-wrapper td.station { max-width: 130px; white-space: normal; }
 }
 
 /* ===== Ссылки на страницы поездов ===== */
