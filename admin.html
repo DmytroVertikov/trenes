@@ -335,19 +335,38 @@ const tabs = (a) => `<header class="hdr"><b>🚆 Расписания</b>
   <button class="${a == "pages" ? "on" : ""}" data-act="tab-pages">Страницы</button><span class="grow"></span>
   <button data-act="logout">Выйти</button></header>`;
 let pg = null;
+/* порядок как на главной: сначала маршруты между столицами провинций (группы по городу отправления,
+   по убыванию населения), затем остальные; внутри группы — по полю sort */
+const CAPITALS = ["Madrid", "Barcelona", "València", "Zaragoza", "Sevilla", "Málaga", "Murcia", "Alicante", "Bilbao", "Córdoba", "Valladolid", "Vitoria-Gasteiz", "A Coruña", "Granada", "Oviedo", "Pamplona", "Almería", "San Sebastián", "Castelló De La Plana", "Burgos", "Santander", "Albacete", "Logroño", "Badajoz", "Lleida", "Salamanca", "Huelva", "Tarragona", "León", "Jaén", "Cádiz", "Girona", "Ourense", "Lugo", "Cáceres", "Guadalajara", "Toledo", "Pontevedra", "Palencia", "Ciudad Real", "Zamora", "Ávila", "Cuenca", "Huesca", "Segovia", "Soria", "Teruel", "Palma", "Las Palmas de Gran Canaria", "Santa Cruz de Tenerife"];
+const CAP_RANK = new Map(CAPITALS.map((c, i) => [normTxt(c), i]));
+const pageEnds = (p) => p.title.split("↔").map(normTxt);
+function pageGroup(p) {
+  const [a, b] = pageEnds(p);
+  return CAP_RANK.has(a) && CAP_RANK.has(b ?? a) ? { rank: CAP_RANK.get(a), label: p.title.split("↔")[0].trim() } : { rank: 9999, label: "Con otras estaciones y terminales" };
+}
+const displayPages = () => S.pages.map((p) => ({ p, g: pageGroup(p) }))
+  .sort((x, y) => x.g.rank - y.g.rank || x.p.sort - y.p.sort || x.p.id - y.p.id);
 const pageTrains = () => { const m = new Map(); for (const x of S.psv) m.set(x.page_id, (m.get(x.page_id) || 0) + 1); return m; };
 const pageStatus = (p, cnt) => (cnt.get(p.id) ? "ok" : p.no_direct ? "nodirect" : "empty");
 const statusTag = (st) => ({ ok: '<span class="st-tag st-ok">есть поезда</span>', empty: '<span class="st-tag st-empty">пока без поездов</span>',
   nodirect: '<span class="st-tag st-nodirect">нет прямых</span>' }[st]);
 function pageRowsHtml() {
-  const cnt = pageTrains(), f = normTxt(pfilter);
-  const rows = S.pages.map((p, i) => ({ p, i, st: pageStatus(p, cnt) }))
-    .filter(({ p, st }) => (!pstatus || st == pstatus) && (!f || normTxt(p.title + " " + p.slug).includes(f)));
-  return rows.map(({ p, i, st }) => `<tr class="row" data-act="editpage" data-id="${p.id}"><td>${i + 1}</td>
+  const cnt = pageTrains(), f = normTxt(pfilter), all = displayPages();
+  let last = null, out = "";
+  all.forEach(({ p, g }, i) => {
+    const st = pageStatus(p, cnt);
+    if ((pstatus && st != pstatus) || (f && !normTxt(p.title + " " + p.slug).includes(f))) return;
+    if (g.label != last) {
+      last = g.label;
+      out += `<tr><td colspan="6" class="small" style="background:#f0f0f0;font-weight:700">${g.rank < 9999 ? "Origen: " : ""}${esc(g.label)}</td></tr>`;
+    }
+    const up = i > 0 && all[i - 1].g.label == g.label, down = i < all.length - 1 && all[i + 1].g.label == g.label;
+    out += `<tr class="row" data-act="editpage" data-id="${p.id}"><td>${i + 1}</td>
     <td><b>${esc(p.title)}</b></td><td class="small">${esc(p.slug)}</td><td class="st-cell">${statusTag(st)}</td>
     <td class="nowrap">${st == "ok" ? "" : `<label data-act="noop"><input type="checkbox" data-act="nodirect" data-id="${p.id}" ${p.no_direct ? "checked" : ""}> нет прямых</label>`}</td>
-    <td class="nowrap"><button class="icon" data-act="pup" data-i="${i}">↑</button> <button class="icon" data-act="pdown" data-i="${i}">↓</button></td></tr>`).join("")
-    || `<tr><td colspan="6" class="small">Ничего не найдено</td></tr>`;
+    <td class="nowrap">${up ? `<button class="icon" data-act="pup" data-i="${i}">↑</button>` : ""} ${down ? `<button class="icon" data-act="pdown" data-i="${i}">↓</button>` : ""}</td></tr>`;
+  });
+  return out || `<tr><td colspan="6" class="small">Ничего не найдено</td></tr>`;
 }
 function renderPages() {
   dirty = false;
@@ -453,9 +472,10 @@ async function savePage(btn) {
   } catch (e) { btn.disabled = false; pfail(e.code == "23505" ? "Страница с таким адресом уже есть" : e.message); }
 }
 async function movePage(i, delta) {
-  const a = S.pages[i], b = S.pages[i + delta]; if (!b) return;
-  const r1 = await db.from("pages").update({ sort: b.sort }).eq("id", a.id);
-  const r2 = await db.from("pages").update({ sort: a.sort }).eq("id", b.id);
+  const L = displayPages(), a = L[i] && L[i].p, b = L[i + delta] && L[i + delta].p; if (!a || !b || L[i].g.label != L[i + delta].g.label) return;
+  const sa = a.sort, sb = b.sort == a.sort ? a.sort + delta : b.sort;
+  const r1 = await db.from("pages").update({ sort: sb }).eq("id", a.id);
+  const r2 = await db.from("pages").update({ sort: sa }).eq("id", b.id);
   if (r1.error || r2.error) say((r1.error || r2.error).message, "err");
   await loadAll(); renderPages();
 }
