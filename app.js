@@ -17,6 +17,16 @@ async function api(path, body) {
   return r.json();
 }
 
+// PostgREST отдаёт максимум 1000 строк за запрос — забираем всё страницами
+async function apiAll(path) {
+  const out = [];
+  for (let off = 0; ; off += 1000) {
+    const rows = await api(`${path}&limit=1000&offset=${off}`);
+    out.push(...rows);
+    if (rows.length < 1000) return out;
+  }
+}
+
 const wrap = (inner) => `
 <div class="top-bar"><a href="index.html" class="back">← Volver</a></div>
 ${inner}`;
@@ -39,7 +49,8 @@ function renderList(rows) {
 
 const cell = (t) => (!t || !t[0] ? "" : t[0] === t[1] || !t[1] ? t[0] : `${t[0]} / ${t[1]}`);
 
-function renderPage(p, notes = []) {
+function renderPage(p, notes = [], noDirect = false) {
+  p.directions = p.directions || [];
   const types = new Set(p.directions.flatMap((d) => (d.services || []).map((s) => s.type)));
   const isMd = (d) => (d.services || []).length > 0 && d.services.every((s) => s.type === "md");
   const noteOf = (i) => (notes.find((n) => n.direction === i) || {}).note || "";
@@ -62,6 +73,14 @@ function renderPage(p, notes = []) {
 <thead><tr><th></th>${head}</tr><tr><th class="days"></th>${days}</tr></thead>
 <tbody>${body}</tbody></table></div>`;
   }).join("");
+
+  if (!p.directions.some((d) => (d.services || []).length)) return wrap(`
+<h1>${esc(p.title)}</h1>
+<p class="subtitle">Horarios de trenes</p>
+<div class="note" style="max-width:560px;text-align:center">${noDirect
+    ? "No hay trenes directos entre estas dos ciudades."
+    : "Todavía no hay horarios añadidos para esta ruta."}</div>
+<footer>${esc(p.title)} · Datos de ejemplo</footer>`);
 
   return wrap(`
 <h1>${esc(p.title)}</h1>
@@ -99,32 +118,41 @@ const hhmm = (t) => (t ? t.slice(0, 5) : "");
 const OPERATORS = [["avant", "Avant"], ["ave", "AVE"], ["alvia", "Alvia"], ["avlo", "Avlo"], ["iryo", "iryo"], ["md", "Media Distancia"], ["ouigo", "OUIGO"], ["ic", "IC"], ["regional", "Regional"]];
 const norm = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
-// столицы провинций: маршруты только между ними идут в первый блок, остальные (Gijón, Avilés, Irun…) — во второй
-const CAPITALS = new Set(["madrid", "valencia", "alicante", "murcia", "bilbao", "oviedo", "toledo", "santander",
-  "castello de la plana", "valladolid", "leon", "albacete", "burgos", "vitoria-gasteiz", "logrono", "ourense",
-  "cuenca", "zamora", "barcelona", "sevilla", "zaragoza", "salamanca", "segovia", "san sebastian"]);
+// Столицы провинций по убыванию населения (INE, 1 января 2025). Порядок = порядок групп на главной.
+// Маршруты только между ними идут в первый блок, остальные (Gijón, Avilés, Irun…) — во второй.
+const CAPITALS = ["Madrid", "Barcelona", "València", "Zaragoza", "Sevilla", "Málaga", "Murcia", "Alicante", "Bilbao", "Córdoba", "Valladolid", "Vitoria-Gasteiz", "A Coruña", "Granada", "Oviedo", "Pamplona", "Almería", "San Sebastián", "Castelló De La Plana", "Burgos", "Santander", "Albacete", "Logroño", "Badajoz", "Lleida", "Salamanca", "Huelva", "Tarragona", "León", "Jaén", "Cádiz", "Girona", "Ourense", "Lugo", "Cáceres", "Guadalajara", "Toledo", "Pontevedra", "Palencia", "Ciudad Real", "Zamora", "Ávila", "Cuenca", "Huesca", "Segovia", "Soria", "Teruel", "Palma", "Las Palmas de Gran Canaria", "Santa Cruz de Tenerife"];
+const CAP_RANK = new Map(CAPITALS.map((c, i) => [norm(c), i]));
+const capRank = (n) => (CAP_RANK.has(n) ? CAP_RANK.get(n) : 999);
+
+// no_direct — признак из админки; page_services[0].count — сколько поездов привязано к странице
+const routeState = (p) => ((p.page_services && p.page_services[0] && p.page_services[0].count) > 0 ? "" : p.no_direct ? " route--nodirect" : " route--empty");
 
 const routeCard = (p) => {
   const [from, to] = p.title.split("↔").map(norm);
-  return `<a href="page.html?p=${encodeURIComponent(p.slug)}" class="route" data-from="${esc(from)}" data-to="${esc(to || "")}">
+  return `<a href="page.html?p=${encodeURIComponent(p.slug)}" class="route${routeState(p)}" data-from="${esc(from)}" data-to="${esc(to || "")}">
   <h2 data-original="${esc(p.title)}">${esc(p.title)}</h2></a>`;
 };
 
 function renderRoutes(pages) {
-  const caps = [], other = [];
+  const caps = new Map(), other = [];
   pages.forEach((p) => {
     const [a, b] = p.title.split("↔").map(norm);
-    (CAPITALS.has(a) && CAPITALS.has(b ?? a) ? caps : other).push(p);
+    if (CAP_RANK.has(a) && CAP_RANK.has(b ?? a)) {
+      const g = caps.get(a) || { title: p.title.split("↔")[0].trim(), list: [] };
+      g.list.push(p); caps.set(a, g);
+    } else other.push(p);
   });
-  const group = (title, list) => !list.length ? "" : `<section class="route-group">
-<h2 class="group-title">${title}</h2>
-<div class="routes-grid">${list.map(routeCard).join("\n")}</div></section>`;
-  return group("Entre capitales de provincia", caps) + group("Con otras estaciones y terminales", other);
+  const origins = [...caps].sort((x, y) => capRank(x[0]) - capRank(y[0])).map(([, g]) => `<div class="origin-group">
+<h3 class="origin-title">${esc(g.title)}</h3>
+<div class="routes-grid">${g.list.map(routeCard).join("\n")}</div></div>`).join("\n");
+  return `${origins ? `<section class="route-group"><h2 class="group-title">Entre capitales de provincia</h2>\n${origins}</section>` : ""}
+${other.length ? `<section class="route-group"><h2 class="group-title">Con otras estaciones y terminales</h2>
+<div class="routes-grid">${other.map(routeCard).join("\n")}</div></section>` : ""}`;
 }
 
 // прячем заголовок блока, если поиск скрыл все его маршруты
 function syncGroups() {
-  document.querySelectorAll(".route-group").forEach((g) => {
+  document.querySelectorAll(".route-group, .origin-group").forEach((g) => {
     const want = ![...g.querySelectorAll(".route")].some((r) => getComputedStyle(r).display !== "none");
     if (g.hidden !== want) g.hidden = want;
   });
@@ -133,7 +161,9 @@ function syncGroups() {
 async function renderIndex() {
   const box = document.getElementById("routes");
   try {
-    const pages = await api("pages?select=slug,title,sort&order=sort");
+    let pages;
+    try { pages = await apiAll("pages?select=slug,title,sort,no_direct,page_services(count)&order=sort,id"); }
+    catch (e) { pages = await apiAll("pages?select=slug,title,sort,page_services(count)&order=sort,id"); } // колонки no_direct ещё нет
     box.innerHTML = renderRoutes(pages);
   } catch (e) {
     box.textContent = "No se pudieron cargar los horarios. " + e.message;
@@ -149,6 +179,10 @@ async function renderIndex() {
   document.dispatchEvent(new Event("DOMContentLoaded")); // на случай, если search.js ждёт это событие
   new MutationObserver(syncGroups).observe(box, { subtree: true, childList: true, attributes: true, attributeFilter: ["style", "class", "hidden"] });
   syncGroups();
+  for (const [id, cls] of [["showEmpty", "hide-empty"], ["showNoDirect", "hide-nodirect"]]) {
+    const cb = document.getElementById(id);
+    if (cb) cb.onchange = () => { document.body.classList.toggle(cls, !cb.checked); syncGroups(); };
+  }
 }
 
 (async () => {
@@ -173,8 +207,10 @@ async function renderIndex() {
       try {
         notes = await api(`page_dir_notes?select=direction,note,pages!inner(slug)&pages.slug=eq.${encodeURIComponent(slug)}`);
       } catch (e) { /* таблицы примечаний ещё нет — заголовки без них */ }
+      let noDirect = false;
+      try { noDirect = !!((await api(`pages?select=no_direct&slug=eq.${encodeURIComponent(slug)}`))[0] || {}).no_direct; } catch (e) { /* колонки ещё нет */ }
       document.title = `${p.title} — Horarios`;
-      app.innerHTML = renderPage(p, notes);
+      app.innerHTML = renderPage(p, notes, noDirect);
     }
   } catch (e) {
     app.textContent = "No se pudieron cargar los horarios. " + e.message;
