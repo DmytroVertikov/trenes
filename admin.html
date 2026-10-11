@@ -51,6 +51,11 @@
   #toast.err{background:#b3261e} #toast.warn{background:#9a6700}
   .login{max-width:340px;margin:12vh auto;display:grid;gap:12px}
   .login label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+  .st-tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;white-space:nowrap}
+  .st-ok{background:#e3f4e8;color:#1f7a3a} .st-empty{background:#fff1c2;color:#7a5a00} .st-nodirect{background:#e3e3e3;color:#555}
+  .pgflt{width:100%;margin:0 0 10px}
+  .pages label[hidden]{display:none}
+  .pages label.sug{font-weight:600}
   @media(max-width:600px){.wrap{padding:10px}.stops input.st{min-width:170px}.pages{gap:4px 14px;font-size:.92rem}.tm input{width:46px}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -104,7 +109,7 @@ const hhmm = (t) => (t ? t.slice(0, 5) : "");
 const cityOf = (n) => n.split(/[-/]/)[0].trim();
 
 let S = { stations: [], list: [], pages: [], ps: [], psv: [], notes: [] };
-let cur = null, msg = null, filter = "";
+let cur = null, msg = null, filter = "", pgFilter = "", pfilter = "", pstatus = "";
 const stName = (id) => (S.stations.find((s) => s.id == id) || {}).name || "?";
 const banner = () => "";
 let dirty = false;
@@ -142,6 +147,23 @@ function pageDirs() {
   }).sort((a, b) => a.sort - b.sort);
 }
 
+const normTxt = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+function suggestedDirs() {
+  const cities = cur.stops.map((s) => (s.station_id ? normTxt(cityOf(stName(s.station_id))) : ""));
+  const out = new Set();
+  if (cities.filter(Boolean).length < 2) return out;
+  const by = new Map();
+  for (const r of S.ps) { const k = r.page_id + ":" + r.direction; (by.get(k) || by.set(k, []).get(k)).push(r); }
+  for (const d of pageDirs()) {
+    const rows = (by.get(d.key) || []).slice().sort((a, b) => a.seq - b.seq);
+    if (rows.length < 2) continue;
+    const i = cities.indexOf(normTxt(cityOf(stName(rows[0].station_id))));
+    const j = cities.lastIndexOf(normTxt(cityOf(stName(rows.at(-1).station_id))));
+    if (i >= 0 && j > i) out.add(d.key);
+  }
+  return out;
+}
+
 /* Supabase отдаёт максимум 1000 строк за запрос — забираем всё страницами */
 async function fetchAll(table, orders) {
   const out = [];
@@ -157,7 +179,7 @@ async function fetchAll(table, orders) {
 
 async function loadAll() {
   const q = [fetchAll("stations", ["name", "id"]), fetchAll("train_list", ["id"]),
-    db.from("pages").select("*").order("sort"),
+    fetchAll("pages", ["sort", "id"]),
     fetchAll("page_stations", ["page_id", "direction", "seq"]),
     fetchAll("page_services", ["page_id", "direction", "sort"]),
     fetchAll("page_dir_notes", ["page_id", "direction"])];
@@ -197,7 +219,7 @@ function renderList() {
 
 /* ---------- редактирование ---------- */
 async function openTrain(id) {
-  dirty = false;
+  dirty = false; pgFilter = "";
   if (!id) {
     cur = { id: null, number: "", freq: "diario", type: "alvia", pages: new Set(), orig: new Set(),
       stops: [{ station_id: "", arrival: "", departure: "" }, { station_id: "", arrival: "", departure: "" }] };
@@ -219,7 +241,11 @@ function renderEdit() {
     <td class="nowrap"><button class="icon" data-act="up" data-i="${i}" title="Выше">↑</button>
     <button class="icon" data-act="down" data-i="${i}" title="Ниже">↓</button>
     <button class="icon danger" data-act="del" data-i="${i}" title="Убрать">✕</button></td></tr>`).join("");
-  const pages = pageDirs().map((d) => `<label><input type="checkbox" data-p="${d.key}" ${cur.pages.has(d.key) ? "checked" : ""}> ${esc(d.label)}</label>`).join("");
+  const sug = suggestedDirs(), dirsAll = pageDirs();
+  const pages = dirsAll.map((d) => {
+    const on = cur.pages.has(d.key), isSug = sug.has(d.key);
+    return `<label class="${isSug ? "sug" : ""}" data-t="${esc(d.label.toLowerCase())}" ${on || isSug || pgFilter ? "" : "hidden"}><input type="checkbox" data-p="${d.key}" ${on ? "checked" : ""}> ${esc(d.label)}</label>`;
+  }).join("");
   app.innerHTML = `<header class="hdr"><button data-act="back">← К списку</button>
     <h1>${cur.id ? esc(cur.number) + " · " + esc(cur.freq) : "Новый поезд"}</h1></header>
     <main class="wrap">${stOptions()}
@@ -233,7 +259,11 @@ function renderEdit() {
       Нет нужной станции — просто введи новое название, админка предложит её создать.</p>
       <div class="scroll"><table class="stops"><thead><tr><th>#</th><th>Станция</th><th>Прибытие</th><th>Отправление</th><th></th></tr></thead><tbody>${stops}</tbody></table></div>
       <p style="margin:12px 0 0"><button data-act="add">+ Остановка</button></p></div>
-    <div class="card"><h2>Показывать на страницах</h2><div class="pages">${pages}</div></div></main>
+    <div class="card"><h2>Показывать на страницах</h2>
+      <p class="small" style="margin:0 0 8px">Сверху — страницы, подходящие по городам маршрута (все пары столиц, через которые идёт поезд). Остальные найдёшь через фильтр.</p>
+      <input class="pgflt" id="pgflt" placeholder="Фильтр страниц: madrid, alicante…" value="${esc(pgFilter)}">
+      <p style="margin:0 0 8px"><button data-act="picksug" ${sug.size ? "" : "disabled"}>Отметить все подходящие (${sug.size})</button></p>
+      <div class="pages" id="pglist">${pages}</div></div></main>
     <div class="actionbar"><div><button class="primary" data-act="save">Сохранить</button>
     ${cur.id ? '<button data-act="copy">Копировать как новый</button><button class="danger" data-act="remove">Удалить</button>' : ""}
     <span class="small" style="align-self:center">Ctrl+S — сохранить</span></div></div>`;
@@ -305,22 +335,41 @@ const tabs = (a) => `<header class="hdr"><b>🚆 Расписания</b>
   <button class="${a == "pages" ? "on" : ""}" data-act="tab-pages">Страницы</button><span class="grow"></span>
   <button data-act="logout">Выйти</button></header>`;
 let pg = null;
+const pageTrains = () => { const m = new Map(); for (const x of S.psv) m.set(x.page_id, (m.get(x.page_id) || 0) + 1); return m; };
+const pageStatus = (p, cnt) => (cnt.get(p.id) ? "ok" : p.no_direct ? "nodirect" : "empty");
+const statusTag = (st) => ({ ok: '<span class="st-tag st-ok">есть поезда</span>', empty: '<span class="st-tag st-empty">пока без поездов</span>',
+  nodirect: '<span class="st-tag st-nodirect">нет прямых</span>' }[st]);
+function pageRowsHtml() {
+  const cnt = pageTrains(), f = normTxt(pfilter);
+  const rows = S.pages.map((p, i) => ({ p, i, st: pageStatus(p, cnt) }))
+    .filter(({ p, st }) => (!pstatus || st == pstatus) && (!f || normTxt(p.title + " " + p.slug).includes(f)));
+  return rows.map(({ p, i, st }) => `<tr class="row" data-act="editpage" data-id="${p.id}"><td>${i + 1}</td>
+    <td><b>${esc(p.title)}</b></td><td class="small">${esc(p.slug)}</td><td class="st-cell">${statusTag(st)}</td>
+    <td class="nowrap">${st == "ok" ? "" : `<label data-act="noop"><input type="checkbox" data-act="nodirect" data-id="${p.id}" ${p.no_direct ? "checked" : ""}> нет прямых</label>`}</td>
+    <td class="nowrap"><button class="icon" data-act="pup" data-i="${i}">↑</button> <button class="icon" data-act="pdown" data-i="${i}">↓</button></td></tr>`).join("")
+    || `<tr><td colspan="6" class="small">Ничего не найдено</td></tr>`;
+}
 function renderPages() {
   dirty = false;
-  const rows = S.pages.map((p, i) => `<tr class="row" data-act="editpage" data-id="${p.id}"><td>${i + 1}</td>
-    <td><b>${esc(p.title)}</b></td><td class="small">${esc(p.slug)}</td>
-    <td class="nowrap"><button class="icon" data-act="pup" data-i="${i}">↑</button> <button class="icon" data-act="pdown" data-i="${i}">↓</button></td></tr>`).join("");
+  const cnt = pageTrains(), n = { ok: 0, empty: 0, nodirect: 0 };
+  for (const p of S.pages) n[pageStatus(p, cnt)]++;
   app.innerHTML = `${tabs("pages")}<main class="wrap"><div class="bar"><h1 class="grow">Страницы (${S.pages.length})</h1>
     <button class="primary" data-act="newpage">+ Новая страница</button></div>
-    <div class="card flush scroll"><table><thead><tr><th>#</th><th>Название</th><th>Адрес</th><th>Порядок на главной</th></tr></thead><tbody>${rows}</tbody></table></div></main>`;
+    <div class="bar"><input id="pflt" class="grow" placeholder="Поиск: madrid, alicante…" value="${esc(pfilter)}">
+    <select id="pstat"><option value="">Все статусы</option>
+      <option value="ok" ${pstatus == "ok" ? "selected" : ""}>Есть поезда (${n.ok})</option>
+      <option value="empty" ${pstatus == "empty" ? "selected" : ""}>Пока без поездов (${n.empty})</option>
+      <option value="nodirect" ${pstatus == "nodirect" ? "selected" : ""}>Нет прямых (${n.nodirect})</option></select></div>
+    <div class="card flush scroll"><table><thead><tr><th>#</th><th>Название</th><th>Адрес</th><th>Статус</th><th>Прямых нет</th><th>Порядок</th></tr></thead>
+    <tbody id="prows">${pageRowsHtml()}</tbody></table></div></main>`;
 }
 function openPage(id) {
   dirty = false;
-  if (!id) pg = { id: null, slug: "", title: "", dirs: [["", ""], ["", ""]], notes: ["", ""] };
+  if (!id) pg = { id: null, slug: "", title: "", no_direct: false, dirs: [["", ""], ["", ""]], notes: ["", ""] };
   else {
     const p = S.pages.find((x) => x.id == id), dirs = [];
     for (const r of S.ps.filter((x) => x.page_id == id).sort((a, b) => a.seq - b.seq)) (dirs[r.direction] ||= []).push(r.station_id);
-    pg = { id, slug: p.slug, title: p.title, dirs,
+    pg = { id, slug: p.slug, title: p.title, no_direct: !!p.no_direct, dirs,
       notes: dirs.map((_, d) => (S.notes.find((n) => n.page_id == id && n.direction == d) || {}).note || "") };
   }
   renderPageEdit();
@@ -347,7 +396,10 @@ function renderPageEdit() {
     <div class="card"><div class="fields">
       <label>Название<input data-pf="title" value="${esc(pg.title)}" placeholder="Madrid ↔ Oviedo"></label>
       <label>Адрес (латиница, без пробелов)<input data-pf="slug" value="${esc(pg.slug)}" ${pg.id ? "disabled" : ""} placeholder="madrid-oviedo"></label>
-    </div>${url ? `<p class="small" style="margin:10px 0 0">Адрес страницы: ${esc(url)}</p>` : ""}</div>
+    </div><p style="margin:12px 0 0"><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" data-pcheck="no_direct" ${pg.no_direct ? "checked" : ""} style="width:18px;height:18px;padding:0">
+      <b>Прямых поездов между этими городами нет</b></label>
+      <span class="small">На главной такая вкладка станет серой (пока к странице не добавлен поезд).</span></p>
+    ${url ? `<p class="small" style="margin:10px 0 0">Адрес страницы: ${esc(url)}</p>` : ""}</div>
     <p class="small">Строки — станции, которые показываются в таблице. Поезд показывает время только на станциях, которые есть и в его маршруте, и здесь.</p>
     ${dirs}
     <p><button data-act="dadd">+ Направление</button> ${pg.dirs.length > 1 ? '<button data-act="ddel">Удалить последнее направление</button>' : ""}</p></main>
@@ -381,10 +433,10 @@ async function savePage(btn) {
   btn.disabled = true;
   try {
     let id = pg.id;
-    if (id) { const r = await db.from("pages").update({ title: pg.title }).eq("id", id); if (r.error) throw r.error; }
+    if (id) { const r = await db.from("pages").update({ title: pg.title, no_direct: !!pg.no_direct }).eq("id", id); if (r.error) throw r.error; }
     else {
       const sort = Math.max(0, ...S.pages.map((p) => p.sort)) + 1;
-      const r = await db.from("pages").insert({ slug: pg.slug, title: pg.title, sort }).select("id").single();
+      const r = await db.from("pages").insert({ slug: pg.slug, title: pg.title, no_direct: !!pg.no_direct, sort }).select("id").single();
       if (r.error) throw r.error; id = r.data.id;
     }
     const r2 = await db.rpc("save_page_stations", { p_page: id, p_dirs: pg.dirs.map((d) => d.map(Number)) });
@@ -420,6 +472,19 @@ app.addEventListener("click", async (e) => {
     const { error } = await db.auth.signInWithPassword({ email: $("#em").value, password: $("#pw").value });
     if (error) { say("Не удалось войти: " + error.message, "err"); return renderLogin(); }
     return start();
+  }
+  if (a == "noop") return;
+  if (a == "nodirect") {
+    const p = S.pages.find((x) => x.id == b.dataset.id), v = b.checked;
+    const r = await db.from("pages").update({ no_direct: v }).eq("id", p.id);
+    if (r.error) { b.checked = !v; return say(r.error.message.includes("no_direct") ? "Нет колонки no_direct — сначала выполни crear_paginas.sql" : r.error.message, "err"); }
+    p.no_direct = v;
+    b.closest("tr").querySelector(".st-cell").innerHTML = statusTag(pageStatus(p, pageTrains()));
+    return;
+  }
+  if (a == "picksug") {
+    for (const k of suggestedDirs()) cur.pages.add(k);
+    dirty = true; return renderEdit();
   }
   const d = +b.dataset.d;
   if (a == "logout") { await db.auth.signOut(); return renderLogin(); }
@@ -469,12 +534,23 @@ app.addEventListener("input", async (e) => {
   if (cur && (t.dataset.f || t.dataset.k || t.dataset.pf)) dirty = true;
   if (t.dataset.pf) { pg[t.dataset.pf] = t.value; return; }
   if (t.dataset.note !== undefined) { pg.notes[+t.dataset.note] = t.value; dirty = true; return; }
+  if (t.id == "pflt") { pfilter = t.value; return void ($("#prows").innerHTML = pageRowsHtml()); }
+  if (t.id == "pgflt") {
+    pgFilter = t.value; const f = normTxt(pgFilter), sug = suggestedDirs();
+    document.querySelectorAll("#pglist label").forEach((l) => {
+      const keep = l.querySelector("input").checked || (!f && l.classList.contains("sug"));
+      l.hidden = f ? !(normTxt(l.dataset.t).includes(f) || l.querySelector("input").checked) : !keep;
+    });
+    return;
+  }
   if (t.id == "flt") { filter = t.value; $("#rows").innerHTML = rowsHtml(); }
   else if (t.dataset.f) cur[t.dataset.f] = t.value;
 });
 app.addEventListener("change", async (e) => {
   const t = e.target;
   if (t.dataset.tk) return onTimeBlur(t);
+  if (t.id == "pstat") { pstatus = t.value; return void ($("#prows").innerHTML = pageRowsHtml()); }
+  if (t.dataset.pcheck) { pg[t.dataset.pcheck] = t.checked; dirty = true; return; }
   if (t.dataset.p || t.dataset.ps || t.dataset.k) dirty = true;
   if (t.dataset.ps) {
     const [d, i] = t.dataset.ps.split(":"), st = findStation(t.value);
