@@ -311,6 +311,70 @@ header p {
   border-bottom: 2px solid #c60b1e;
 }
 
+.origin-group {
+  margin-bottom: 18px;
+}
+
+.origin-group[hidden] {
+  display: none;
+}
+
+.origin-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #444;
+  margin: 0 0 8px;
+}
+
+/* статусы маршрутов: без поездов / без прямых поездов */
+.route.route--empty {
+  background: #fff1c2;
+}
+
+.route.route--nodirect {
+  background: #e3e3e3;
+  box-shadow: none;
+}
+
+.route--nodirect h2 {
+  color: #888;
+  font-weight: 500;
+}
+
+.hide-empty .route--empty,
+.hide-nodirect .route--nodirect {
+  display: none !important;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 22px;
+  margin: 0 auto 24px;
+  font-size: 0.88rem;
+  color: #555;
+}
+
+.legend label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+}
+
+.legend .dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1px solid rgba(0,0,0,0.18);
+  display: inline-block;
+}
+
+.dot-ok { background: #fff; }
+.dot-empty { background: #fff1c2; }
+.dot-nodirect { background: #e3e3e3; }
+
 .routes-grid {
   column-count: 3;
   column-gap: 12px;
