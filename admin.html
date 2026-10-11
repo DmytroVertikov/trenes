@@ -453,13 +453,10 @@ async function savePage(btn) {
   } catch (e) { btn.disabled = false; pfail(e.code == "23505" ? "Страница с таким адресом уже есть" : e.message); }
 }
 async function movePage(i, delta) {
-  const j = i + delta; if (!S.pages[j]) return;
-  // Меняем местами и перенумеровываем все страницы 1..N: так нет одинаковых sort,
-  // и порядок в админке всегда совпадает с порядком на главной (order=sort,id).
-  const order = S.pages.slice(); [order[i], order[j]] = [order[j], order[i]];
-  const res = await Promise.all(order.map((p, k) => ({ p, sort: k + 1 })).filter(({ p, sort }) => p.sort !== sort)
-    .map(({ p, sort }) => db.from("pages").update({ sort }).eq("id", p.id)));
-  const bad = res.find((r) => r.error); if (bad) say(bad.error.message, "err");
+  const a = S.pages[i], b = S.pages[i + delta]; if (!b) return;
+  const r1 = await db.from("pages").update({ sort: b.sort }).eq("id", a.id);
+  const r2 = await db.from("pages").update({ sort: a.sort }).eq("id", b.id);
+  if (r1.error || r2.error) say((r1.error || r2.error).message, "err");
   await loadAll(); renderPages();
 }
 
