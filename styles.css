@@ -271,39 +271,79 @@ header p {
   font-size: 0.95rem;
 }
 
-.container {
-  max-width: 700px;
-  margin: 40px auto;
-  padding: 0 16px;
+.header-operators {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.header-operators .th-logo-badge {
+  padding: 7px 16px;
+  border-radius: 10px;
+}
+
+.header-operators img {
+  height: 32px;
+  width: auto;
+  display: block;
 }
 
 /* ===== Карточки маршрутов ===== */
 
+.container {
+  max-width: 1100px;
+  margin: 32px auto 40px;
+  padding: 0 16px;
+}
+
+.route-group {
+  margin-bottom: 28px;
+}
+
+.group-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #c60b1e;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #c60b1e;
+}
+
+.routes-grid {
+  column-count: 3;
+  column-gap: 12px;
+}
+
 .route {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
+  display: block;
+  break-inside: avoid;
   background: white;
-  border-radius: 12px;
-  padding: 20px 24px;
-  margin-bottom: 16px;
+  border-radius: 10px;
+  padding: 11px 14px;
+  margin-bottom: 8px;
   text-decoration: none;
   color: inherit;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.07);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.07);
   transition: transform 0.15s, box-shadow 0.15s;
 }
 
+.route[hidden],
+.route-group[hidden] {
+  display: none;
+}
+
 .route:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
 }
 
 .route h2 {
-  font-size: 1.2rem;
-  margin-bottom: 0;
+  font-size: 0.95rem;
+  margin: 0;
   color: #c60b1e;
-  white-space: nowrap;
+  font-weight: 600;
 }
 
 .route p {
@@ -526,13 +566,20 @@ footer {
     padding-right: 5px;
   }
 
- .route {
-    padding: 16px 18px;
-    gap: 12px;
+  .routes-grid {
+    column-count: 1;
   }
 
-  .route h2 {
-    font-size: 1rem;
+  .header-operators {
+    gap: 6px;
+  }
+
+  .header-operators .th-logo-badge {
+    padding: 5px 10px;
+  }
+
+  .header-operators img {
+    height: 24px;
   }
 
   .train-operators {
@@ -567,4 +614,10 @@ th .th-code a,
 th .th-code a:hover,
 .train-num-cell a:hover {
   text-decoration: underline;
+}
+
+@media (min-width: 601px) and (max-width: 900px) {
+  .routes-grid {
+    column-count: 2;
+  }
 }
