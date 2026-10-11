@@ -99,25 +99,41 @@ const hhmm = (t) => (t ? t.slice(0, 5) : "");
 const OPERATORS = [["avant", "Avant"], ["ave", "AVE"], ["alvia", "Alvia"], ["avlo", "Avlo"], ["iryo", "iryo"], ["md", "Media Distancia"], ["ouigo", "OUIGO"], ["ic", "IC"], ["regional", "Regional"]];
 const norm = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
+// столицы провинций: маршруты только между ними идут в первый блок, остальные (Gijón, Avilés, Irun…) — во второй
+const CAPITALS = new Set(["madrid", "valencia", "alicante", "murcia", "bilbao", "oviedo", "toledo", "santander",
+  "castello de la plana", "valladolid", "leon", "albacete", "burgos", "vitoria-gasteiz", "logrono", "ourense",
+  "cuenca", "zamora", "barcelona", "sevilla", "zaragoza", "salamanca", "segovia", "san sebastian"]);
+
+const routeCard = (p) => {
+  const [from, to] = p.title.split("↔").map(norm);
+  return `<a href="page.html?p=${encodeURIComponent(p.slug)}" class="route" data-from="${esc(from)}" data-to="${esc(to || "")}">
+  <h2 data-original="${esc(p.title)}">${esc(p.title)}</h2></a>`;
+};
+
 function renderRoutes(pages) {
-  return pages.map((p) => {
-    const types = new Set(p.page_services.map((x) => x.services && x.services.type));
-    const [from, to] = p.title.split("↔").map(norm);
-    const logos = OPERATORS.filter(([t]) => types.has(t)).map(([t, alt]) =>
-      `<img src="images/${t}.svg" alt="${alt}" class="operator-logo operator-${t}">`).join("\n            ");
-    return `<a href="page.html?p=${encodeURIComponent(p.slug)}" class="route" data-from="${esc(from)}" data-to="${esc(to || "")}">
-        <h2 data-original="${esc(p.title)}">${esc(p.title)}</h2>
-        <div class="train-operators">
-            ${logos}
-        </div>
-    </a>`;
-  }).join("\n");
+  const caps = [], other = [];
+  pages.forEach((p) => {
+    const [a, b] = p.title.split("↔").map(norm);
+    (CAPITALS.has(a) && CAPITALS.has(b ?? a) ? caps : other).push(p);
+  });
+  const group = (title, list) => !list.length ? "" : `<section class="route-group">
+<h2 class="group-title">${title}</h2>
+<div class="routes-grid">${list.map(routeCard).join("\n")}</div></section>`;
+  return group("Entre capitales de provincia", caps) + group("Con otras estaciones y terminales", other);
+}
+
+// прячем заголовок блока, если поиск скрыл все его маршруты
+function syncGroups() {
+  document.querySelectorAll(".route-group").forEach((g) => {
+    const want = ![...g.querySelectorAll(".route")].some((r) => getComputedStyle(r).display !== "none");
+    if (g.hidden !== want) g.hidden = want;
+  });
 }
 
 async function renderIndex() {
   const box = document.getElementById("routes");
   try {
-    const pages = await api("pages?select=slug,title,sort,page_services(services(type))&order=sort");
+    const pages = await api("pages?select=slug,title,sort&order=sort");
     box.innerHTML = renderRoutes(pages);
   } catch (e) {
     box.textContent = "No se pudieron cargar los horarios. " + e.message;
@@ -131,6 +147,8 @@ async function renderIndex() {
     document.body.appendChild(sc);
   });
   document.dispatchEvent(new Event("DOMContentLoaded")); // на случай, если search.js ждёт это событие
+  new MutationObserver(syncGroups).observe(box, { subtree: true, childList: true, attributes: true, attributeFilter: ["style", "class", "hidden"] });
+  syncGroups();
 }
 
 (async () => {
