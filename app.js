@@ -144,4 +144,75 @@ function renderRoutes(pages) {
   });
   const origins = [...caps].sort((x, y) => capRank(x[0]) - capRank(y[0])).map(([, g]) => `<div class="origin-group">
 <h3 class="origin-title">${esc(g.title)}</h3>
-<div class="routes-grid">${g.list.map(routeCard).join("\n")}</div></di
+<div class="routes-grid">${g.list.map(routeCard).join("\n")}</div></div>`).join("\n");
+  return `${origins ? `<section class="route-group"><h2 class="group-title">Entre capitales de provincia</h2>\n${origins}</section>` : ""}
+${other.length ? `<section class="route-group"><h2 class="group-title">Con otras estaciones y terminales</h2>
+<div class="routes-grid">${other.map(routeCard).join("\n")}</div></section>` : ""}`;
+}
+
+// прячем заголовок блока, если поиск скрыл все его маршруты
+function syncGroups() {
+  document.querySelectorAll(".route-group, .origin-group").forEach((g) => {
+    const want = ![...g.querySelectorAll(".route")].some((r) => getComputedStyle(r).display !== "none");
+    if (g.hidden !== want) g.hidden = want;
+  });
+}
+
+async function renderIndex() {
+  const box = document.getElementById("routes");
+  try {
+    let pages;
+    try { pages = await apiAll("pages?select=slug,title,sort,no_direct,page_services(count)&order=sort,id"); }
+    catch (e) { pages = await apiAll("pages?select=slug,title,sort,page_services(count)&order=sort,id"); } // колонки no_direct ещё нет
+    box.innerHTML = renderRoutes(pages);
+  } catch (e) {
+    box.textContent = "No se pudieron cargar los horarios. " + e.message;
+    return;
+  }
+  // поиск подключаем только когда маршруты уже на странице
+  await new Promise((done) => {
+    const sc = document.createElement("script");
+    sc.src = "search.js";
+    sc.onload = sc.onerror = done;
+    document.body.appendChild(sc);
+  });
+  document.dispatchEvent(new Event("DOMContentLoaded")); // на случай, если search.js ждёт это событие
+  new MutationObserver(syncGroups).observe(box, { subtree: true, childList: true, attributes: true, attributeFilter: ["style", "class", "hidden"] });
+  syncGroups();
+  for (const [id, cls] of [["showEmpty", "hide-empty"], ["showNoDirect", "hide-nodirect"]]) {
+    const cb = document.getElementById(id);
+    if (cb) cb.onchange = () => { document.body.classList.toggle(cls, !cb.checked); syncGroups(); };
+  }
+}
+
+(async () => {
+  const app = document.getElementById("app");
+  const slug = new URLSearchParams(location.search).get("p") || document.body.dataset.page;
+  if (!slug) return location.replace("index.html");
+  if (slug === "index") return renderIndex();
+  try {
+    if (slug === "train") {
+      const n = new URLSearchParams(location.search).get("n");
+      if (!n) return location.replace("lista-trenes.html");
+      const rows = await api(`services?select=number,freq,type,stops(seq,arrival,departure,stations(name))&number=eq.${encodeURIComponent(n)}&stops.order=seq&order=freq`);
+      if (!rows.length) throw new Error(`Tren «${n}» no encontrado`);
+      document.title = `${n} — Horarios`;
+      app.innerHTML = renderTrain(rows, n);
+    } else if (slug === "lista-trenes") {
+      app.innerHTML = renderList(await api("train_list?select=number,freq,origin,destination"));
+    } else {
+      const p = await api("rpc/get_page", { p_slug: slug });
+      if (!p) throw new Error(`Página «${slug}» no encontrada`);
+      let notes = [];
+      try {
+        notes = await api(`page_dir_notes?select=direction,note,pages!inner(slug)&pages.slug=eq.${encodeURIComponent(slug)}`);
+      } catch (e) { /* таблицы примечаний ещё нет — заголовки без них */ }
+      let noDirect = false;
+      try { noDirect = !!((await api(`pages?select=no_direct&slug=eq.${encodeURIComponent(slug)}`))[0] || {}).no_direct; } catch (e) { /* колонки ещё нет */ }
+      document.title = `${p.title} — Horarios`;
+      app.innerHTML = renderPage(p, notes, noDirect);
+    }
+  } catch (e) {
+    app.textContent = "No se pudieron cargar los horarios. " + e.message;
+  }
+})();
