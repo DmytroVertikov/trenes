@@ -115,7 +115,7 @@ ${body}
 const hhmm = (t) => (t ? t.slice(0, 5) : "");
 
 /* ---------- главная: список маршрутов из таблицы pages ---------- */
-const OPERATORS = [["avant", "Avant"], ["ave", "AVE"], ["alvia", "Alvia"], ["avlo", "Avlo"], ["iryo", "iryo"], ["md", "Media Distancia"], ["ouigo", "OUIGO"], ["ic", "IC"], ["regional", "Regional"]];
+const OPERATORS = [["avant", "Avant"], ["ave", "AVE"], ["euromed", "Euromed"], ["alvia", "Alvia"], ["avlo", "Avlo"], ["iryo", "iryo"], ["md", "Media Distancia"], ["ouigo", "OUIGO"], ["ic", "IC"], ["regional", "Regional"]];
 const norm = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
 // Столицы провинций по убыванию населения (INE, 1 января 2025). Порядок = порядок групп на главной.
