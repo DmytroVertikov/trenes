@@ -120,7 +120,16 @@ function say(text, kind = "") {
   if (kind != "err") t._h = setTimeout(() => t.remove(), kind == "warn" ? 14000 : 4000);
 }
 const stOptions = () => `<datalist id="stlist">${S.stations.map((s) => `<option value="${esc(s.name)}">`).join("")}</datalist>`;
-const findStation = (v) => S.stations.find((s) => s.name.toLowerCase() == v.trim().toLowerCase());
+// сравниваем в NFC и без лишних пробелов: «ñ» может быть записана как n + ˜ (NFD) или одним символом (NFC)
+const nameKey = (t) => String(t || "").normalize("NFC").replace(/\s+/g, " ").trim().toLowerCase();
+const findStation = (v) => {
+  const k = nameKey(v);
+  const exact = S.stations.find((s) => nameKey(s.name) == k);
+  if (exact) return exact;
+  // запасной вариант: без диакритики, но только если совпадение единственное
+  const loose = S.stations.filter((s) => normTxt(s.name) == normTxt(v));
+  return loose.length == 1 ? loose[0] : undefined;
+};
 
 /* Вставляет в rows станции маршрута (между первой и последней совпавшей), сохраняя порядок. Возвращает добавленные id. */
 function mergeRows(rows, route) {
