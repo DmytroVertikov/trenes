@@ -203,9 +203,9 @@ function renderLogin() {
 /* ---------- список ---------- */
 function rowsHtml() {
   const f = filter.toLowerCase();
-  return S.list.filter((t) => !f || `${t.number} ${t.freq} ${t.origin} ${t.destination}`.toLowerCase().includes(f))
+  return S.list.filter((t) => !f || `${t.number} ${t.type} ${t.freq} ${t.origin} ${t.destination}`.toLowerCase().includes(f))
     .map((t) => `<tr class="row" data-act="edit" data-id="${t.id}"><td class="nowrap"><b>${esc(t.number)}</b></td>
-      <td>${esc(t.origin)} → ${esc(t.destination)}</td><td class="nowrap">${esc(t.freq)}</td></tr>`).join("")
+      <td class="nowrap">${esc(t.type)}</td><td>${esc(t.origin)} → ${esc(t.destination)}</td><td class="nowrap">${esc(t.freq)}</td></tr>`).join("")
     || `<tr><td colspan="3" class="small">Ничего не найдено</td></tr>`;
 }
 function renderList() {
@@ -213,7 +213,7 @@ function renderList() {
   app.innerHTML = `${tabs("trains")}<main class="wrap">
     <div class="bar"><input id="flt" class="grow" placeholder="Поиск: номер, город, периодичность (${S.list.length} поездов)" value="${esc(filter)}">
     <button class="primary" data-act="new">+ Новый поезд</button></div>
-    <div class="card flush scroll"><table><thead><tr><th>Поезд</th><th>Маршрут</th><th>Периодичность</th></tr></thead>
+    <div class="card flush scroll"><table><thead><tr><th>Поезд</th><th>Тип</th><th>Маршрут</th><th>Периодичность</th></tr></thead>
     <tbody id="rows">${rowsHtml()}</tbody></table></div></main>`;
 }
 
