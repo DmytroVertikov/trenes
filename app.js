@@ -64,11 +64,11 @@ const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<
 let FEED = null; // метаданные последней загрузки (таблица feed_meta)
 const fdate = (v) => { const d = new Date(v); return isNaN(d) ? "" : d.toLocaleDateString("es-ES"); };
 const sourceFooter = (label) => {
-  const stale = FEED && FEED.valid_to && new Date(FEED.valid_to) < new Date();
-  return `<footer>${esc(label)}<br>Datos de horarios: Renfe Operadora, obtenidos del Punto de Acceso Nacional de Transporte Multimodal (NAP) del Ministerio de Transportes y Movilidad Sostenible${FEED ? ` · actualizados el ${fdate(FEED.feed_date)} · válidos hasta el ${fdate(FEED.valid_to)}` : ""}. Datos procesados por este sitio. <a href="https://www.transportes.gob.es/" rel="noopener">Powered by MITRAMS</a><br>Sitio de uso personal y sin fines comerciales. No es un sitio oficial ni está afiliado a Renfe ni al MITRAMS. Los datos pueden contener errores: confirme los horarios con Renfe.${stale ? "<br><b>⚠ Estos datos han caducado: los horarios pueden no ser vigentes.</b>" : ""}<br><a href="#" onclick="logout();return false">Cerrar sesión</a></footer>`;
+  const stale = FEED && FEED.some((f) => f.valid_to && new Date(f.valid_to) < new Date());
+  return `<footer>${esc(label)}<br>Datos de horarios: Renfe Operadora y OUIGO España, obtenidos del Punto de Acceso Nacional de Transporte Multimodal (NAP) del Ministerio de Transportes y Movilidad Sostenible${FEED && FEED.length ? ` (${FEED.map((f) => `${esc(f.source_file.split(":")[0])}: actualizados el ${fdate(f.feed_date)}, válidos hasta el ${fdate(f.valid_to)}`).join("; ")})` : ""}. Datos procesados por este sitio. <a href="https://www.transportes.gob.es/" rel="noopener">Powered by MITRAMS</a><br>Sitio de uso personal y sin fines comerciales. No es un sitio oficial ni está afiliado a Renfe ni al MITRAMS. Los datos pueden contener errores: confirme los horarios con Renfe.${stale ? "<br><b>⚠ Estos datos han caducado: los horarios pueden no ser vigentes.</b>" : ""}<br><a href="#" onclick="logout();return false">Cerrar sesión</a></footer>`;
 };
 async function loadFeed() {
-  try { FEED = (await api("feed_meta?select=feed_date,valid_to&order=id.desc&limit=1"))[0] || null; } catch (e) { /* без метаданных футер просто короче */ }
+  try { FEED = await api("feed_meta?select=source_file,feed_date,valid_to&order=id"); } catch (e) { /* без метаданных футер просто короче */ }
 }
 const num = (n) => parseInt(n.split(" ")[1], 10);
 
