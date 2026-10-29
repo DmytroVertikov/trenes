@@ -11,17 +11,11 @@ let FEED = null; // метаданные последней загрузки (т
 const fdate = (v) => { const d = new Date(v); return isNaN(d) ? "" : d.toLocaleDateString("es-ES"); };
 const sourceFooter = (label) => {
   const stale = FEED && FEED.valid_to && new Date(FEED.valid_to) < new Date();
-  return `<footer>${esc(label)}<br>Datos de horarios: Renfe Operadora, vía Punto de Acceso Nacional de Transporte Multimodal (MITRAMS)${FEED ? ` · actualizados el ${fdate(FEED.feed_date)} · válidos hasta el ${fdate(FEED.valid_to)}` : ""}. Pueden contener errores: confirme los horarios con Renfe. <a href="https://www.transportes.gob.es/" rel="noopener">Powered by MITRAMS</a>${stale ? "<br><b>⚠ Estos datos han caducado: los horarios pueden no ser vigentes.</b>" : ""}</footer>`;
+  return `<footer>${esc(label)}<br>Datos de horarios: Renfe Operadora, obtenidos del Punto de Acceso Nacional de Transporte Multimodal (NAP) del Ministerio de Transportes y Movilidad Sostenible${FEED ? ` · actualizados el ${fdate(FEED.feed_date)} · válidos hasta el ${fdate(FEED.valid_to)}` : ""}. Datos procesados por este sitio. <a href="https://www.transportes.gob.es/" rel="noopener">Powered by MITRAMS</a><br>Sitio de uso personal y sin fines comerciales. No es un sitio oficial ni está afiliado a Renfe ni al MITRAMS. Los datos pueden contener errores: confirme los horarios con Renfe.${stale ? "<br><b>⚠ Estos datos han caducado: los horarios pueden no ser vigentes.</b>" : ""}</footer>`;
 };
 async function loadFeed() {
   try { FEED = (await api("feed_meta?select=feed_date,valid_to&order=id.desc&limit=1"))[0] || null; } catch (e) { /* без метаданных футер просто короче */ }
 }
-// если для типа поезда нет файла логотипа - показываем текстовую метку
-window.logoFallback = (img) => {
-  const t = document.createElement("span");
-  t.textContent = img.alt; t.style.cssText = "font-weight:600;font-size:.85em";
-  img.replaceWith(t);
-};
 const num = (n) => parseInt(n.split(" ")[1], 10);
 
 async function api(path, body) {
@@ -64,7 +58,7 @@ ${sourceFooter("Lista de trenes")}`);
 
 const cell = (t) => (!t || !t[0] ? "" : t[0] === t[1] || !t[1] ? t[0] : `${t[0]} / ${t[1]}`);
 
-function renderPage(p, notes = [], noDirect = false) {
+function renderPage(p, notes = []) {
   p.directions = p.directions || [];
   const types = new Set(p.directions.flatMap((d) => (d.services || []).map((s) => s.type)));
   const isMd = (d) => (d.services || []).length > 0 && d.services.every((s) => s.type === "md");
@@ -77,8 +71,7 @@ function renderPage(p, notes = [], noDirect = false) {
     const head = (d.services || []).map((s) => {
       const nt = [ids.has(s.origin.id) ? "" : `desde ${esc(s.origin.city)}`, ids.has(s.destination.id) ? "" : `→ ${esc(s.destination.city)}`]
         .filter(Boolean).join(" ");
-      return `<th><div class="th-train"><span class="th-logo-badge"><img class="th-logo th-logo-${s.type}" src="images/${s.type}.svg" alt="${esc(s.type.toUpperCase())}" onerror="logoFallback(this)"></span>
-        <span class="th-code"><a href="${trainHref(s.number)}">${esc(s.number)}</a></span>${nt ? `<span class="route-note">${nt}</span>` : ""}</div></th>`;
+      return `<th><div class="th-train"><span class="th-code"><a href="${trainHref(s.number)}">${esc(s.number)}</a></span>${nt ? `<span class="route-note">${nt}</span>` : ""}</div></th>`;
     }).join("");
     const days = (d.services || []).map((s) => `<th class="days">${esc(s.freq)}</th>`).join("");
     const body = d.stations.map((st) =>
@@ -92,9 +85,7 @@ function renderPage(p, notes = [], noDirect = false) {
   if (!p.directions.some((d) => (d.services || []).length)) return wrap(`
 <h1>${esc(p.title)}</h1>
 <p class="subtitle">Horarios de trenes</p>
-<div class="note" style="max-width:560px;text-align:center">${noDirect
-    ? "No hay trenes directos entre estas dos ciudades."
-    : "Todavía no hay horarios añadidos para esta ruta."}</div>
+<div class="note" style="max-width:560px;text-align:center">No hay horarios para esta ruta.</div>
 ${sourceFooter(p.title)}`);
 
   return wrap(`
@@ -106,8 +97,8 @@ ${sourceFooter(p.title)}`);
 }
 
 
-const logosHtml = (types) => `<div class="train-operators">${OPERATORS.filter(([t]) => types.has(t)).map(([t, alt]) =>
-  `<img src="images/${t}.svg" alt="${alt}" class="operator-logo operator-${t}" onerror="logoFallback(this)">`).join("")}</div>`;
+const logosHtml = (types) => `<div class="train-operators">${OPERATORS.filter(([t]) => types.has(t)).map(([, name]) =>
+  `<span class="operator-name" style="font-weight:600;margin:0 .6em">${esc(name)}</span>`).join("")}</div>`;
 
 /* ---------- страница одного поезда ---------- */
 const trainHref = (n) => `train.html?n=${encodeURIComponent(n)}`;
@@ -139,12 +130,9 @@ const CAPITALS = ["Madrid", "Barcelona", "València", "Zaragoza", "Sevilla", "M�
 const CAP_RANK = new Map(CAPITALS.map((c, i) => [norm(c), i]));
 const capRank = (n) => (CAP_RANK.has(n) ? CAP_RANK.get(n) : 999);
 
-// no_direct — признак из админки; page_services[0].count — сколько поездов привязано к странице
-const routeState = (p) => ((p.page_services && p.page_services[0] && p.page_services[0].count) > 0 ? "" : p.no_direct ? " route--nodirect" : " route--empty");
-
 const routeCard = (p) => {
   const [from, to] = p.title.split("↔").map(norm);
-  return `<a href="page.html?p=${encodeURIComponent(p.slug)}" class="route${routeState(p)}" data-from="${esc(from)}" data-to="${esc(to || "")}">
+  return `<a href="page.html?p=${encodeURIComponent(p.slug)}" class="route" data-from="${esc(from)}" data-to="${esc(to || "")}">
   <h2 data-original="${esc(p.title)}">${esc(p.title)}</h2></a>`;
 };
 
@@ -173,13 +161,21 @@ function syncGroups() {
   });
 }
 
+// убираем из интерфейса фильтры «Con trenes / Aún sin trenes / Sin trenes directos»
+function removeOldFilters() {
+  const OLD = /^(con trenes|a[uú]n sin trenes|sin trenes directos)$/i;
+  ["showEmpty", "showNoDirect", "showWith"].forEach((id) => { const cb = document.getElementById(id); if (cb) (cb.closest("label") || cb).remove(); });
+  document.querySelectorAll("body *").forEach((el) => { if (el.isConnected && OLD.test(el.textContent.trim())) el.remove(); });
+}
+
 async function renderIndex() {
   const box = document.getElementById("routes");
   try {
-    let pages;
-    try { pages = await apiAll("pages?select=slug,title,sort,no_direct,page_services(count)&order=sort,id"); }
-    catch (e) { pages = await apiAll("pages?select=slug,title,sort,page_services(count)&order=sort,id"); } // колонки no_direct ещё нет
+    const pages = await apiAll("pages?select=slug,title,sort&order=sort,id");
     box.innerHTML = renderRoutes(pages);
+    const oldFooter = document.querySelector("footer");
+    if (oldFooter) oldFooter.outerHTML = sourceFooter("Horarios de trenes");
+    else box.insertAdjacentHTML("afterend", sourceFooter("Horarios de trenes"));
   } catch (e) {
     box.textContent = "No se pudieron cargar los horarios. " + e.message;
     return;
@@ -194,18 +190,15 @@ async function renderIndex() {
   document.dispatchEvent(new Event("DOMContentLoaded")); // на случай, если search.js ждёт это событие
   new MutationObserver(syncGroups).observe(box, { subtree: true, childList: true, attributes: true, attributeFilter: ["style", "class", "hidden"] });
   syncGroups();
-  for (const [id, cls] of [["showEmpty", "hide-empty"], ["showNoDirect", "hide-nodirect"]]) {
-    const cb = document.getElementById(id);
-    if (cb) cb.onchange = () => { document.body.classList.toggle(cls, !cb.checked); syncGroups(); };
-  }
+  removeOldFilters();
 }
 
 (async () => {
   const app = document.getElementById("app");
   const slug = new URLSearchParams(location.search).get("p") || document.body.dataset.page;
   if (!slug) return location.replace("index.html");
-  if (slug === "index") return renderIndex();
   await loadFeed();
+  if (slug === "index") return renderIndex();
   try {
     if (slug === "train") {
       const n = new URLSearchParams(location.search).get("n");
@@ -223,10 +216,8 @@ async function renderIndex() {
       try {
         notes = await api(`page_dir_notes?select=direction,note,pages!inner(slug)&pages.slug=eq.${encodeURIComponent(slug)}`);
       } catch (e) { /* таблицы примечаний ещё нет — заголовки без них */ }
-      let noDirect = false;
-      try { noDirect = !!((await api(`pages?select=no_direct&slug=eq.${encodeURIComponent(slug)}`))[0] || {}).no_direct; } catch (e) { /* колонки ещё нет */ }
       document.title = `${p.title} — Horarios`;
-      app.innerHTML = renderPage(p, notes, noDirect);
+      app.innerHTML = renderPage(p, notes);
     }
   } catch (e) {
     app.textContent = "No se pudieron cargar los horarios. " + e.message;
