@@ -98,7 +98,7 @@ ${sourceFooter(p.title)}`);
 
 
 const logosHtml = (types) => `<div class="train-operators">${OPERATORS.filter(([t]) => types.has(t)).map(([, name]) =>
-  `<span class="operator-name" style="font-weight:600;margin:0 .6em">${esc(name)}</span>`).join("")}</div>`;
+  `<span class="operator-name">${esc(name)}</span>`).join("")}</div>`;
 
 /* ---------- страница одного поезда ---------- */
 const trainHref = (n) => `train.html?n=${encodeURIComponent(n)}`;
