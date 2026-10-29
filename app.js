@@ -7,6 +7,21 @@ const SUPABASE_KEY = "sb_publishable_WiNelnQznSawnLT51_yCYQ_B-ZXOFF1";
 const H = { apikey: SUPABASE_KEY, "Content-Type": "application/json" };
 if (SUPABASE_KEY.startsWith("eyJ")) H.Authorization = `Bearer ${SUPABASE_KEY}`; // только для старых JWT-ключей
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+let FEED = null; // метаданные последней загрузки (таблица feed_meta)
+const fdate = (v) => { const d = new Date(v); return isNaN(d) ? "" : d.toLocaleDateString("es-ES"); };
+const sourceFooter = (label) => {
+  const stale = FEED && FEED.valid_to && new Date(FEED.valid_to) < new Date();
+  return `<footer>${esc(label)}<br>Datos de horarios: Renfe Operadora, vía Punto de Acceso Nacional de Transporte Multimodal (MITRAMS)${FEED ? ` · actualizados el ${fdate(FEED.feed_date)} · válidos hasta el ${fdate(FEED.valid_to)}` : ""}. Pueden contener errores: confirme los horarios con Renfe. <a href="https://www.transportes.gob.es/" rel="noopener">Powered by MITRAMS</a>${stale ? "<br><b>⚠ Estos datos han caducado: los horarios pueden no ser vigentes.</b>" : ""}</footer>`;
+};
+async function loadFeed() {
+  try { FEED = (await api("feed_meta?select=feed_date,valid_to&order=id.desc&limit=1"))[0] || null; } catch (e) { /* без метаданных футер просто короче */ }
+}
+// если для типа поезда нет файла логотипа - показываем текстовую метку
+window.logoFallback = (img) => {
+  const t = document.createElement("span");
+  t.textContent = img.alt; t.style.cssText = "font-weight:600;font-size:.85em";
+  img.replaceWith(t);
+};
 const num = (n) => parseInt(n.split(" ")[1], 10);
 
 async function api(path, body) {
@@ -44,7 +59,7 @@ function renderList(rows) {
 <td class="route-cell">${esc(r.origin)} → ${esc(r.destination)}</td>
 <td class="freq-cell">${esc(r.freq)}</td></tr>`).join("")}
 </tbody></table></div>
-<footer>Lista de trenes · Datos de ejemplo</footer>`);
+${sourceFooter("Lista de trenes")}`);
 }
 
 const cell = (t) => (!t || !t[0] ? "" : t[0] === t[1] || !t[1] ? t[0] : `${t[0]} / ${t[1]}`);
@@ -62,7 +77,7 @@ function renderPage(p, notes = [], noDirect = false) {
     const head = (d.services || []).map((s) => {
       const nt = [ids.has(s.origin.id) ? "" : `desde ${esc(s.origin.city)}`, ids.has(s.destination.id) ? "" : `→ ${esc(s.destination.city)}`]
         .filter(Boolean).join(" ");
-      return `<th><div class="th-train"><span class="th-logo-badge"><img class="th-logo th-logo-${s.type}" src="images/${s.type}.svg" alt="${s.type}"></span>
+      return `<th><div class="th-train"><span class="th-logo-badge"><img class="th-logo th-logo-${s.type}" src="images/${s.type}.svg" alt="${esc(s.type.toUpperCase())}" onerror="logoFallback(this)"></span>
         <span class="th-code"><a href="${trainHref(s.number)}">${esc(s.number)}</a></span>${nt ? `<span class="route-note">${nt}</span>` : ""}</div></th>`;
     }).join("");
     const days = (d.services || []).map((s) => `<th class="days">${esc(s.freq)}</th>`).join("");
@@ -80,19 +95,19 @@ function renderPage(p, notes = [], noDirect = false) {
 <div class="note" style="max-width:560px;text-align:center">${noDirect
     ? "No hay trenes directos entre estas dos ciudades."
     : "Todavía no hay horarios añadidos para esta ruta."}</div>
-<footer>${esc(p.title)} · Datos de ejemplo</footer>`);
+${sourceFooter(p.title)}`);
 
   return wrap(`
 <h1>${esc(p.title)}</h1>
 <p class="subtitle">Horarios de trenes</p>
 ${logosHtml(types)}
 ${tables}
-<footer>${esc(p.title)} · Datos de ejemplo</footer>`);
+${sourceFooter(p.title)}`);
 }
 
 
 const logosHtml = (types) => `<div class="train-operators">${OPERATORS.filter(([t]) => types.has(t)).map(([t, alt]) =>
-  `<img src="images/${t}.svg" alt="${alt}" class="operator-logo operator-${t}">`).join("")}</div>`;
+  `<img src="images/${t}.svg" alt="${alt}" class="operator-logo operator-${t}" onerror="logoFallback(this)">`).join("")}</div>`;
 
 /* ---------- страница одного поезда ---------- */
 const trainHref = (n) => `train.html?n=${encodeURIComponent(n)}`;
@@ -110,12 +125,12 @@ function renderTrain(rows, n) {
 <h1>${esc(n)}</h1>
 ${logosHtml(new Set(rows.map((r) => r.type)))}
 ${body}
-<footer>${esc(n)} · Datos de ejemplo</footer>`;
+${sourceFooter(n)}`;
 }
 const hhmm = (t) => (t ? t.slice(0, 5) : "");
 
 /* ---------- главная: список маршрутов из таблицы pages ---------- */
-const OPERATORS = [["avant", "Avant"], ["ave", "AVE"], ["euromed", "Euromed"], ["alvia", "Alvia"], ["avlo", "Avlo"], ["iryo", "iryo"], ["md", "Media Distancia"], ["ouigo", "OUIGO"], ["ic", "IC"], ["regional", "Regional"]];
+const OPERATORS = [["avant", "Avant"], ["ave", "AVE"], ["euromed", "Euromed"], ["alvia", "Alvia"], ["avlo", "Avlo"], ["iryo", "iryo"], ["md", "Media Distancia"], ["ouigo", "OUIGO"], ["ic", "IC"], ["regional", "Regional"], ["proximidad", "Proximidad"], ["trencelta", "TrenCelta"]];
 const norm = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
 // Столицы провинций по убыванию населения (INE, 1 января 2025). Порядок = порядок групп на главной.
@@ -190,6 +205,7 @@ async function renderIndex() {
   const slug = new URLSearchParams(location.search).get("p") || document.body.dataset.page;
   if (!slug) return location.replace("index.html");
   if (slug === "index") return renderIndex();
+  await loadFeed();
   try {
     if (slug === "train") {
       const n = new URLSearchParams(location.search).get("n");
@@ -199,7 +215,7 @@ async function renderIndex() {
       document.title = `${n} — Horarios`;
       app.innerHTML = renderTrain(rows, n);
     } else if (slug === "lista-trenes") {
-      app.innerHTML = renderList(await api("train_list?select=number,freq,origin,destination"));
+      app.innerHTML = renderList(await apiAll("train_list?select=number,freq,origin,destination&order=number"));
     } else {
       const p = await api("rpc/get_page", { p_slug: slug });
       if (!p) throw new Error(`Página «${slug}» no encontrada`);
