@@ -4,14 +4,68 @@
 const SUPABASE_URL = "https://kitwekuehldxtkmtacrh.supabase.co";
 const SUPABASE_KEY = "sb_publishable_WiNelnQznSawnLT51_yCYQ_B-ZXOFF1";
 
-const H = { apikey: SUPABASE_KEY, "Content-Type": "application/json" };
-if (SUPABASE_KEY.startsWith("eyJ")) H.Authorization = `Bearer ${SUPABASE_KEY}`; // только для старых JWT-ключей
+const H = { apikey: SUPABASE_KEY, "Content-Type": "application/json" }; // Authorization добавляется после входа
+
+/* ---------- вход (Supabase Auth): без него база не отдаёт данные ---------- */
+const SKEY = "sb_session";
+const getSession = () => { try { return JSON.parse(localStorage.getItem(SKEY)); } catch (e) { return null; } };
+async function authCall(grant, body) {
+  const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=${grant}`, {
+    method: "POST", headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" }, body: JSON.stringify(body),
+  });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error_description || j.msg || j.message || "auth error");
+  const sess = { access_token: j.access_token, refresh_token: j.refresh_token, expires_at: Date.now() + (j.expires_in - 60) * 1000 };
+  localStorage.setItem(SKEY, JSON.stringify(sess));
+  return sess;
+}
+async function ensureSession() {
+  let sess = getSession();
+  if (sess && sess.expires_at > Date.now()) { H.Authorization = `Bearer ${sess.access_token}`; return true; }
+  if (sess && sess.refresh_token) {
+    try { sess = await authCall("refresh_token", { refresh_token: sess.refresh_token }); H.Authorization = `Bearer ${sess.access_token}`; return true; }
+    catch (e) { localStorage.removeItem(SKEY); }
+  }
+  delete H.Authorization;
+  return false;
+}
+function showLogin() {
+  return new Promise((resolve) => {
+    const inp = "padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:1rem";
+    const o = document.createElement("div");
+    o.style.cssText = "position:fixed;inset:0;z-index:9999;background:#f5f5f5;display:flex;align-items:center;justify-content:center;padding:16px";
+    o.innerHTML = `<form style="background:#fff;padding:24px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.1);width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px">
+<h2 style="color:#c60b1e;font-size:1.2rem;text-align:center">Acceso privado</h2>
+<input name="email" type="email" placeholder="Correo electrónico" required autocomplete="username" style="${inp}">
+<input name="password" type="password" placeholder="Contraseña" required autocomplete="current-password" style="${inp}">
+<button style="padding:10px;border:0;border-radius:8px;background:#c60b1e;color:#fff;font-weight:600;font-size:1rem;cursor:pointer">Entrar</button>
+<div class="login-err" style="color:#c60b1e;font-size:.85rem;min-height:1em;text-align:center"></div></form>`;
+    document.body.appendChild(o);
+    o.querySelector("form").onsubmit = async (e) => {
+      e.preventDefault();
+      const f = e.target, err = o.querySelector(".login-err");
+      err.textContent = "";
+      try {
+        const sess = await authCall("password", { email: f.email.value.trim(), password: f.password.value });
+        H.Authorization = `Bearer ${sess.access_token}`;
+        o.remove(); resolve();
+      } catch (x) { err.textContent = "Correo o contraseña incorrectos."; }
+    };
+  });
+}
+let gatePromise = null;
+async function gate() {
+  if (await ensureSession()) return;
+  if (!gatePromise) gatePromise = showLogin().finally(() => { gatePromise = null; });
+  await gatePromise;
+}
+window.logout = () => { localStorage.removeItem(SKEY); location.reload(); };
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 let FEED = null; // метаданные последней загрузки (таблица feed_meta)
 const fdate = (v) => { const d = new Date(v); return isNaN(d) ? "" : d.toLocaleDateString("es-ES"); };
 const sourceFooter = (label) => {
   const stale = FEED && FEED.valid_to && new Date(FEED.valid_to) < new Date();
-  return `<footer>${esc(label)}<br>Datos de horarios: Renfe Operadora, obtenidos del Punto de Acceso Nacional de Transporte Multimodal (NAP) del Ministerio de Transportes y Movilidad Sostenible${FEED ? ` · actualizados el ${fdate(FEED.feed_date)} · válidos hasta el ${fdate(FEED.valid_to)}` : ""}. Datos procesados por este sitio. <a href="https://www.transportes.gob.es/" rel="noopener">Powered by MITRAMS</a><br>Sitio de uso personal y sin fines comerciales. No es un sitio oficial ni está afiliado a Renfe ni al MITRAMS. Los datos pueden contener errores: confirme los horarios con Renfe.${stale ? "<br><b>⚠ Estos datos han caducado: los horarios pueden no ser vigentes.</b>" : ""}</footer>`;
+  return `<footer>${esc(label)}<br>Datos de horarios: Renfe Operadora, obtenidos del Punto de Acceso Nacional de Transporte Multimodal (NAP) del Ministerio de Transportes y Movilidad Sostenible${FEED ? ` · actualizados el ${fdate(FEED.feed_date)} · válidos hasta el ${fdate(FEED.valid_to)}` : ""}. Datos procesados por este sitio. <a href="https://www.transportes.gob.es/" rel="noopener">Powered by MITRAMS</a><br>Sitio de uso personal y sin fines comerciales. No es un sitio oficial ni está afiliado a Renfe ni al MITRAMS. Los datos pueden contener errores: confirme los horarios con Renfe.${stale ? "<br><b>⚠ Estos datos han caducado: los horarios pueden no ser vigentes.</b>" : ""}<br><a href="#" onclick="logout();return false">Cerrar sesión</a></footer>`;
 };
 async function loadFeed() {
   try { FEED = (await api("feed_meta?select=feed_date,valid_to&order=id.desc&limit=1"))[0] || null; } catch (e) { /* без метаданных футер просто короче */ }
@@ -19,6 +73,7 @@ async function loadFeed() {
 const num = (n) => parseInt(n.split(" ")[1], 10);
 
 async function api(path, body) {
+  await gate();
   const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, body
     ? { method: "POST", headers: H, body: JSON.stringify(body) }
     : { headers: H });
@@ -195,6 +250,7 @@ async function renderIndex() {
 
 (async () => {
   const app = document.getElementById("app");
+  await gate();
   const slug = new URLSearchParams(location.search).get("p") || document.body.dataset.page;
   if (!slug) return location.replace("index.html");
   await loadFeed();
