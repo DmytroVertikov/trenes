@@ -65,7 +65,7 @@ let FEED = null; // метаданные последней загрузки (т
 const fdate = (v) => { const d = new Date(v); return isNaN(d) ? "" : d.toLocaleDateString("es-ES"); };
 const sourceFooter = (label) => {
   const stale = FEED && FEED.some((f) => f.valid_to && new Date(f.valid_to) < new Date());
-  return `<footer>${esc(label)}<br>Datos de horarios: Renfe Operadora y OUIGO España, obtenidos del Punto de Acceso Nacional de Transporte Multimodal (NAP) del Ministerio de Transportes y Movilidad Sostenible${FEED && FEED.length ? ` (${FEED.map((f) => `${esc(f.source_file.split(":")[0])}: actualizados el ${fdate(f.feed_date)}, válidos hasta el ${fdate(f.valid_to)}`).join("; ")})` : ""}. Datos procesados por este sitio. <a href="https://www.transportes.gob.es/" rel="noopener">Powered by MITRAMS</a><br>Sitio de uso personal y sin fines comerciales. No es un sitio oficial ni está afiliado a Renfe ni al MITRAMS. Los datos pueden contener errores: confirme los horarios con Renfe.${stale ? "<br><b>⚠ Estos datos han caducado: los horarios pueden no ser vigentes.</b>" : ""}<br><a href="#" onclick="logout();return false">Cerrar sesión</a></footer>`;
+  return `<footer>${esc(label)}<br>Datos de horarios: Renfe Operadora (incluido Cercanías) y OUIGO España, obtenidos del Punto de Acceso Nacional de Transporte Multimodal (NAP) del Ministerio de Transportes y Movilidad Sostenible${FEED && FEED.length ? ` (${FEED.map((f) => `${esc(f.source_file.split(":")[0])}: actualizados el ${fdate(f.feed_date)}, válidos hasta el ${fdate(f.valid_to)}`).join("; ")})` : ""}. Datos procesados por este sitio. <a href="https://www.transportes.gob.es/" rel="noopener">Powered by MITRAMS</a><br>Sitio de uso personal y sin fines comerciales. No es un sitio oficial ni está afiliado a Renfe ni al MITRAMS. Los datos pueden contener errores: confirme los horarios con Renfe.${stale ? "<br><b>⚠ Estos datos han caducado: los horarios pueden no ser vigentes.</b>" : ""}<br><a href="#" onclick="logout();return false">Cerrar sesión</a></footer>`;
 };
 async function loadFeed() {
   try { FEED = await api("feed_meta?select=source_file,feed_date,valid_to&order=id"); } catch (e) { /* без метаданных футер просто короче */ }
@@ -176,7 +176,7 @@ ${sourceFooter(n)}`;
 const hhmm = (t) => (t ? t.slice(0, 5) : "");
 
 /* ---------- главная: список маршрутов из таблицы pages ---------- */
-const OPERATORS = [["avant", "Avant"], ["ave", "AVE"], ["euromed", "Euromed"], ["alvia", "Alvia"], ["avlo", "Avlo"], ["iryo", "iryo"], ["md", "Media Distancia"], ["ouigo", "OUIGO"], ["ic", "IC"], ["regional", "Regional"], ["proximidad", "Proximidad"], ["trencelta", "TrenCelta"]];
+const OPERATORS = [["avant", "Avant"], ["ave", "AVE"], ["euromed", "Euromed"], ["alvia", "Alvia"], ["avlo", "Avlo"], ["iryo", "iryo"], ["md", "Media Distancia"], ["ouigo", "OUIGO"], ["ic", "IC"], ["regional", "Regional"], ["cercanias", "Cercanías"], ["proximidad", "Proximidad"], ["trencelta", "TrenCelta"]];
 const norm = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
 // Столицы провинций по убыванию населения (INE, 1 января 2025). Порядок = порядок групп на главной.
@@ -186,14 +186,18 @@ const CAP_RANK = new Map(CAPITALS.map((c, i) => [norm(c), i]));
 const capRank = (n) => (CAP_RANK.has(n) ? CAP_RANK.get(n) : 999);
 
 const routeCard = (p) => {
-  const [from, to] = p.title.split("↔").map(norm);
+  const [from0, to] = p.title.split("↔").map(norm);
+  const from = from0.replace(/^cercanias.*?:\s*/, ""); // у Cercanías поиск идёт по названию станции
+  const shown = p.title.replace(/^Cercanías .+? · /, ""); // сеть уже указана в заголовке группы
   return `<a href="page.html?p=${encodeURIComponent(p.slug)}" class="route" data-from="${esc(from)}" data-to="${esc(to || "")}">
-  <h2 data-original="${esc(p.title)}">${esc(p.title)}</h2></a>`;
+  <h2 data-original="${esc(shown)}">${esc(shown)}</h2></a>`;
 };
 
 function renderRoutes(pages) {
-  const caps = new Map(), other = [];
+  const caps = new Map(), other = [], cerca = new Map();
   pages.forEach((p) => {
+    const cm = p.title.match(/^Cercanías (.+?) · /);
+    if (cm) { if (!cerca.has(cm[1])) cerca.set(cm[1], []); cerca.get(cm[1]).push(p); return; }
     const [a, b] = p.title.split("↔").map(norm);
     if (CAP_RANK.has(a) && CAP_RANK.has(b ?? a)) {
       const g = caps.get(a) || { title: p.title.split("↔")[0].trim(), list: [] };
@@ -205,7 +209,11 @@ function renderRoutes(pages) {
 <div class="routes-grid">${g.list.map(routeCard).join("\n")}</div></div>`).join("\n");
   return `${origins ? `<section class="route-group"><h2 class="group-title">Entre capitales de provincia</h2>\n${origins}</section>` : ""}
 ${other.length ? `<section class="route-group"><h2 class="group-title">Con otras estaciones y terminales</h2>
-<div class="routes-grid">${other.map(routeCard).join("\n")}</div></section>` : ""}`;
+<div class="routes-grid">${other.map(routeCard).join("\n")}</div></section>` : ""}
+${cerca.size ? `<section class="route-group"><h2 class="group-title">Cercanías (líneas por red)</h2>
+${[...cerca].sort((x, y) => x[0].localeCompare(y[0], "es")).map(([net, list]) => `<div class="origin-group">
+<h3 class="origin-title">${esc(net)}</h3>
+<div class="routes-grid">${list.map(routeCard).join("\n")}</div></div>`).join("\n")}</section>` : ""}`;
 }
 
 // прячем заголовок блока, если поиск скрыл все его маршруты
